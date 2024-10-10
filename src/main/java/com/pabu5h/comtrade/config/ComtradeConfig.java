@@ -1,8 +1,8 @@
-package com.pabu5h.comtrade;
+package com.pabu5h.comtrade.config;
 
 import lombok.Data;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 @Data
 public class ComtradeConfig {
@@ -12,14 +12,13 @@ public class ComtradeConfig {
     private int numOfChannels;
     private int numOfAnalogChannels;
     private int numOfDigitalChannels;
-    private List<Map<String, String>> analogChannels;
-    private List<Map<String, String>> digitalChannels;
-    private int lineFrequency;
-    private List<int[]> sampleRates;
+    private double lineFrequency;
+    private int sampleRates;
+    private int numOfSamples;
     private String startTimestamp;
     private String endTimestamp;
     private String fileType;
     private int timeMultiplier;
-    private List<Double> analogValues;
-    private List<Double> digitalValues;
+    private List<LinkedHashMap<String, Object>> analogChannels;
+    private List<LinkedHashMap<String, Object>> digitalChannels;
 }
