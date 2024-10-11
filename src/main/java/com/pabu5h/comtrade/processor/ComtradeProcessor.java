@@ -25,7 +25,7 @@ public class ComtradeProcessor {
         return result;
     }
 
-    public Map<String,Object> validateFile(MultipartFile file) throws IOException {
+    public Map<String,Object> validateFile(MultipartFile file) {
         // Check if the file has a valid extension (e.g., .cfg or .dat)
         String fileName = file.getOriginalFilename();
         if (fileName == null || !(fileName.endsWith(".cfg") || fileName.endsWith(".dat"))) {
