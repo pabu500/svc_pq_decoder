@@ -17,7 +17,7 @@ public class ComtradeModule {
 
     private byte[] datByteData;
 
-    public Map<String,Object> processCfgConfig(InputStream cfgInputStream, InputStream datInputStream) throws IOException {
+    public Map<String,Object> processCfgConfig(InputStream cfgInputStream, InputStream datInputStream,int step) throws IOException {
         comtradeConfig = new ComtradeConfig();
         Map<String,Object> response = new HashMap<>();
         // Reads the configuration file
@@ -97,14 +97,13 @@ public class ComtradeModule {
         Map<String,Object> result = new HashMap<>();
         if(comtradeConfig.getNumOfAnalogChannels()>0 || comtradeConfig.getNumOfDigitalChannels()>0){
             if ("BINARY".equalsIgnoreCase(comtradeConfig.getFileType())) {
-                result =  readBinaryData(datByteData);
+                result =  readBinaryData(datByteData,step);
             } else if ("ASCII".equalsIgnoreCase(comtradeConfig.getFileType())) {
                 result =  readAsciiData(datByteData);
             }else{
                 result.put("error","Invalid file type");
             }
         }
-
         response.put("result",comtradeConfig);
         Map<String,Object> error = (Map<String, Object>) result.get("error");
         if(error!=null){
@@ -113,7 +112,7 @@ public class ComtradeModule {
         return response;
     }
 
-    public Map<String,Object> readBinaryData(byte[] datByteData) {
+    public Map<String,Object> readBinaryData(byte[] datByteData,int step) {
         // Getting auxiliary variables
         int numOfAnalogChannels = comtradeConfig.getNumOfAnalogChannels();
         int numOfDigitalChannels = comtradeConfig.getNumOfDigitalChannels();
@@ -126,10 +125,11 @@ public class ComtradeModule {
             return Map.of("error","Number of samples must be greater than 0.");
         }
 
+        //32 + 32 + 16*nA + 16*nD
         int bytesPerSample = 4 + 4 + numOfAnalogChannels * 2 + numOfDigitalBytes * 2;
         Map<String, Object> errorMap = new HashMap<>();
 
-        for (int sampleIndex = 0; sampleIndex < numberOfSamples; sampleIndex+=100) {
+        for (int sampleIndex = 0; sampleIndex < numberOfSamples; sampleIndex+=step) {
             int startIndex = sampleIndex * bytesPerSample;
             int endIndex = startIndex + bytesPerSample;
 
@@ -211,6 +211,7 @@ public class ComtradeModule {
         ByteBuffer buffer = ByteBuffer.wrap(sampleData);
         buffer.order(ByteOrder.LITTLE_ENDIAN); // Assuming little-endian based on the Python example
 
+        // metadata values
         // Read the two integers (4 bytes each)
         int int1 = buffer.getInt();
         int int2 = buffer.getInt();
