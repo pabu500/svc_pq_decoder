@@ -21,8 +21,7 @@ The primary goal of this project is to convert COMTRADE files into more user-fri
   - Endpoint: /process_pqd
   - Ensure the UI is configured to send the files to this endpoint.
  
-###
-Required params
+### Required params
 - cfg multipart
 - dat multipart
 - operation
