@@ -1,7 +1,6 @@
 ﻿## pq_decoder
-### pq_decoder or COMTRADE decoder is a tool develop decode COMTRADE (Common Format for Transient Data Exchange) files.
-### pq_decoder reads in cfg (configuration file) and dat file and enables users to extract, process, and analyze Power Quality (PQ) data from these files.
-### This project aims to convert COMTRADE files into a more user-friendly format (such as CSV and JSON), allowing users to inspect and analyze the data using familiar tools.
+PQ Decoder (or COMTRADE Decoder) is a tool developed to decode COMTRADE (Common Format for Transient Data Exchange) files. It reads .cfg (configuration) and .dat (data) files, enabling users to extract, process, and analyze Power Quality (PQ) data.
+The primary goal of this project is to convert COMTRADE files into more user-friendly formats, such as CSV or JSON, making it easier for users to inspect and analyze the data using familiar tools.
 
 ##Features
 Parse COMTRADE files (.cfg and .dat) according to the IEEE C37.111 standard.
