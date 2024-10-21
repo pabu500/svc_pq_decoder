@@ -7,3 +7,12 @@ The primary goal of this project is to convert COMTRADE files into more user-fri
 - Extract both analog and digital signal data.
 - Handle various formats including binary and ASCII
 - Generate output in formats like CSV and JSON
+
+## installation guide
+- download intellij
+- pull the latest pq_decoder from https://github.com/pabu500/pq_decoder.git repo
+- run the backend
+- have some UI to upload the cfg and dat file byte data to the pq_decoder backend
+- endpoint : process_pqd
+
+
