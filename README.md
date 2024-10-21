@@ -10,10 +10,24 @@ The primary goal of this project is to convert COMTRADE files into more user-fri
 
 ## installation guide
 - download intellij
-- - Download and install IntelliJ IDEA for your development environment.
-- pull the latest pq_decoder from https://github.com/pabu500/pq_decoder.git repo
+  - Download and install IntelliJ IDEA for your development environment.
+- pull the latest pq_decoder
+  - git clone https://github.com/pabu500/pq_decoder.git repo
 - run the backend
-- have some UI to upload the cfg and dat file byte data to the pq_decoder backend
-- endpoint : process_pqd
+  - open the intellij and run the backend to start service
+- run the frontend
+  - have some UI to upload the cfg and dat file byte data to the pq_decoder backend
+- API Endpoint
+  - Endpoint: /process_pqd
+  - Ensure the UI is configured to send the files to this endpoint.
+ 
+###
+Required params
+- cfg multipart
+- dat multipart
+- operation
+  - plotGraph
+  - downloadCsvZip
+  - downloadJsonZip
 
 
