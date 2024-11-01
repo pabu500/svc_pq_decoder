@@ -24,7 +24,8 @@ public class comtradeController {
     public ResponseEntity<Object> processPqd(@RequestParam("cfgFile") MultipartFile cfgFile,
                                                          @RequestParam("datFile") MultipartFile datFile,
                                                          @RequestParam("operation") String operation,
-                                                         @RequestParam(value = "sample_step", required = false, defaultValue = "1") String samplingStep) throws IOException {
+                                                         @RequestParam(value = "sample_step", required = false, defaultValue = "1") String samplingStep,
+                                                         @RequestParam(value = "filename", required = false, defaultValue = "data1") String filename) throws IOException {
         int step;
         try{
             step = Integer.parseInt(samplingStep);
@@ -42,7 +43,7 @@ public class comtradeController {
         }
 
         Map<String, Object> comtradeConfig = comtradeProcessor.processPqd(
-                cfgFile.getInputStream(), datFile.getInputStream(),step,operation);
+                cfgFile.getInputStream(), datFile.getInputStream(),step,operation,filename);
         Object result = comtradeConfig.get("result") != null ? comtradeConfig.get("result") : new ArrayList<>();
         Object error = comtradeConfig.get("error") != null ? comtradeConfig.get("error") : new ArrayList<>();
         Map<String, Object> response = new LinkedHashMap<>();
@@ -53,7 +54,7 @@ public class comtradeController {
             logger.info("result: " + result);
             // Set the headers for the response
             HttpHeaders headers = new HttpHeaders();
-            headers.add("Content-Disposition", "attachment; filename=data.xlsx");
+            headers.add("Content-Disposition", "attachment; filename=" + filename + ".zip");
             headers.add("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             return ResponseEntity.status(HttpStatus.OK).headers(headers).body(zipBytes);
         }

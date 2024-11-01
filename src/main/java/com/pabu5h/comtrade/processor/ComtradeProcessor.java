@@ -28,7 +28,7 @@ public class ComtradeProcessor {
     public ComtradeProcessor(ComtradeModule comtradeModule) {
         this.comtradeModule = comtradeModule; // Ensure it's being set correctly
     }
-    public Map<String, Object> processPqd(InputStream cfgInputStream, InputStream datInputStream, int step, String operation) throws IOException {
+    public Map<String, Object> processPqd(InputStream cfgInputStream, InputStream datInputStream, int step, String operation,String filename) throws IOException {
         Map<String, Object> result = comtradeModule.processCfgConfig(cfgInputStream, datInputStream, step);
         ComtradeConfig comtradeResult = (ComtradeConfig) result.get("result");
         Map<String, Object> convertedConfigMap = convertConfigFieldsToMap(comtradeResult);
@@ -46,7 +46,7 @@ public class ComtradeProcessor {
                 ByteArrayOutputStream zipOutputStream = new ByteArrayOutputStream();
                 try (ZipOutputStream zipOut = new ZipOutputStream(zipOutputStream)) {
 
-                    String xlsxFileName = "data.xlsx";
+                    String xlsxFileName = filename+".xlsx";
                     ByteArrayOutputStream xlsxOutputStream = new ByteArrayOutputStream();
                     Map<String, Object> xlsxResult = createExcelWithMultipleSheets(comtradeMap);
                     xlsxOutputStream.write((byte[]) xlsxResult.get("result")); // Ensure you get the byte array from the result
@@ -251,70 +251,5 @@ public class ComtradeProcessor {
 
             valueRow.createCell(0).setCellValue(valueString);
         }
-
-    }
-
-
-    public void createCsv(OutputStream outputStream, Map<String, Object> Comtrade) throws IOException {
-        // Create a BufferedWriter to write to the CSV file
-        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8))) {
-            // Write general info
-            writeGeneralInfo(writer, Comtrade);
-
-            // Write a separator for analog channels
-            writer.newLine(); // Add a new line before starting analog channels
-
-            // Write analog channels
-            List<Map<String, Object>> analogChannels = (List<Map<String, Object>>) Comtrade.get("analogChannels");
-            for (Map<String, Object> channel : analogChannels) {
-                writeAnalogChannel(writer, channel);
-            }
-
-        }
-    }
-
-    private void writeGeneralInfo(BufferedWriter writer, Map<String, Object> result) throws IOException {
-        // Write headers
-        String headers = String.join(",", result.keySet());
-        writer.write(headers);
-        writer.newLine(); // Move to the next line
-
-        // Write values
-        String values = result.values().stream()
-                .map(value -> value != null ? value.toString() : "") // Handle nulls
-                .reduce((a, b) -> a + "," + b)
-                .orElse("");
-        writer.write(values);
-        writer.newLine(); // Move to the next line
-    }
-
-    private void writeAnalogChannel(BufferedWriter writer, Map<String, Object> channel) throws IOException {
-        // Write channel-specific headers
-        writer.write("Channel Properties for " + channel.get("name")); // Assuming there's a 'name' field
-        writer.newLine();
-        writer.write("Property,Value");
-        writer.newLine(); // Move to the next line
-
-        // Write channel properties
-        for (Map.Entry<String, Object> entry : channel.entrySet()) {
-            if ("values".equals(entry.getKey())) {
-                continue; // Skip values for now; we'll add them later
-            }
-            writer.write(entry.getKey() + "," + (entry.getValue() != null ? entry.getValue().toString() : "")); // Handle nulls
-            writer.newLine(); // Move to the next line
-        }
-
-        // Now, add the values header
-        writer.write("Values");
-        writer.newLine();
-
-        // Retrieve and write values
-        List<Double> values = (List<Double>) channel.get("values");
-        for (Double value : values) {
-            writer.write(value != null ? value.toString() : ""); // Handle nulls
-            writer.newLine(); // Move to the next line
-        }
-
-        writer.newLine(); // Add a new line after each channel for separation
     }
 }
