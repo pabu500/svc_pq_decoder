@@ -31,7 +31,7 @@ public class HealthCheckController {
 
     @GetMapping("/hello")
     public ResponseEntity<String> hello(/*HttpServletResponse httpServletResponse*/) {
-        return ResponseEntity.ok()./*headers(headers).*/body("HARV:" + version);
+        return ResponseEntity.ok()./*headers(headers).*/body("COMTRADE:" + version);
     }
     @GetMapping("/health")
     public String checkHealth() {
