@@ -24,7 +24,12 @@ public class SecurityConfig implements WebMvcConfigurer { // Implement WebMvcCon
                 .httpBasic(withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/", "/process_pqd").permitAll()
+                        .requestMatchers(
+                                "/",
+                                "/health",
+                                "/hello",
+                                "/process_pqd"
+                        ).permitAll()
                         .anyRequest().authenticated());
         return http.build();
     }

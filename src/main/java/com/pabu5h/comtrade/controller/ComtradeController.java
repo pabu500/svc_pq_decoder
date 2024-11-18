@@ -15,8 +15,8 @@ import java.util.*;
 import java.util.logging.Logger;
 
 @RestController
-public class comtradeController {
-    Logger logger = Logger.getLogger(comtradeController.class.getName());
+public class ComtradeController {
+    Logger logger = Logger.getLogger(ComtradeController.class.getName());
     @Autowired
     private ComtradeProcessor comtradeProcessor;
 
