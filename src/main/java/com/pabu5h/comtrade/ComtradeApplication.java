@@ -8,11 +8,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class ComtradeApplication {
 	@Autowired
 	private ComtradeModule comtradeModule;
-
 	public static void main(String[] args) {
 		SpringApplication.run(ComtradeApplication.class, args);
 
 	}
-
-
 }

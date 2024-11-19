@@ -73,7 +73,7 @@ public class ComtradeController {
                 default:
                     logger.info("Invalid operation");
                     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                            .body(Map.of("success", false, "error", "Invalid operation: " + operation));
+                            .body(Map.of("success", false, "error", "Invalid operation: " + operation, result,new ArrayList<>()));
             }
             return ResponseEntity.status(HttpStatus.OK).headers(headers).body(zipBytes);
         }
