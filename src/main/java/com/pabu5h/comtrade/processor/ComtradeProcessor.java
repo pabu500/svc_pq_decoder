@@ -1,5 +1,6 @@
 package com.pabu5h.comtrade.processor;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pabu5h.comtrade.ComtradeModule;
 import com.pabu5h.comtrade.config.ComtradeConfig;
 import org.apache.poi.xssf.usermodel.XSSFFont;
@@ -39,23 +40,34 @@ public class ComtradeProcessor {
                 result.put("result", comtradeMap);
                 break;
             case "downloadJsonZip":
-                result.put("result", comtradeMap);
-                break;
             case "downloadCsvZip":
-                logger.info("Creating a zip file with CSV and XLSX content");
+                logger.info("Creating a zip file with JSON content");
                 ByteArrayOutputStream zipOutputStream = new ByteArrayOutputStream();
                 try (ZipOutputStream zipOut = new ZipOutputStream(zipOutputStream)) {
-
-                    String xlsxFileName = filename+".xlsx";
-                    ByteArrayOutputStream xlsxOutputStream = new ByteArrayOutputStream();
-                    Map<String, Object> xlsxResult = createExcelWithMultipleSheets(comtradeMap);
-                    xlsxOutputStream.write((byte[]) xlsxResult.get("result")); // Ensure you get the byte array from the result
-                    ZipEntry xlsxZipEntry = new ZipEntry(xlsxFileName);
-                    zipOut.putNextEntry(xlsxZipEntry);
-                    zipOut.write(xlsxOutputStream.toByteArray());
+                    String extension;
+                    if ("downloadJsonZip".equals(operation)) {
+                        extension = ".json";
+                        String jsonContent = new ObjectMapper().writeValueAsString(comtradeMap);
+                        String fileName = filename + extension;
+                        ZipEntry zipEntry = new ZipEntry(fileName);
+                        zipOut.putNextEntry(zipEntry);
+                        zipOut.write(jsonContent.getBytes(StandardCharsets.UTF_8));
+                    } else {
+                        extension = ".xlsx";
+                        Map<String, Object> xlsxResult = createExcelWithMultipleSheets(comtradeMap);
+                        byte[] xlsxBytes = (byte[]) xlsxResult.get("result");
+                        String fileName = filename + extension;
+                        ZipEntry zipEntry = new ZipEntry(fileName);
+                        zipOut.putNextEntry(zipEntry);
+                        zipOut.write(xlsxBytes);
+                    }
                     zipOut.closeEntry();
-                    zipOut.finish(); // Ensure all entries are finished
+                    zipOut.finish();
+
                     return Map.of("result", zipOutputStream.toByteArray());
+                } catch (IOException e) {
+                    logger.severe("Error creating JSON zip file");
+                    return Map.of("error", "Failed to create JSON zip file");
                 }
             default:
                 break;

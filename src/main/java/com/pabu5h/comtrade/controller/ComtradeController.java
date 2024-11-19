@@ -47,17 +47,37 @@ public class ComtradeController {
         Object result = comtradeConfig.get("result") != null ? comtradeConfig.get("result") : new ArrayList<>();
         Object error = comtradeConfig.get("error") != null ? comtradeConfig.get("error") : new ArrayList<>();
         Map<String, Object> response = new LinkedHashMap<>();
-        if ("downloadCsvZip".equals(operation)) {
-            logger.info("sending csv zip file to client");
+        if ("downloadCsvZip".equals(operation) || "downloadJsonZip".equals(operation)) {
+            if("downloadCsvZip".equals(operation)) {
+                logger.info("sending csv zip file to client");
+            }else{
+                logger.info("sending json zip file to client");
+            }
+            byte[] zipBytes;
+            try{
+                zipBytes  = (byte[]) result;
+            }catch(Exception e){
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("success",false,"error", "cannot convert to byte"));
+            }
 
-            byte[] zipBytes = (byte[]) result;
-            logger.info("result: " + result);
             // Set the headers for the response
             HttpHeaders headers = new HttpHeaders();
             headers.add("Content-Disposition", "attachment; filename=" + filename + ".zip");
-            headers.add("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            switch(operation){
+                case "downloadCsvZip":
+                    headers.add("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+                    break;
+                case "downloadJsonZip":
+                    headers.add("Content-Type", "application/json");
+                    break;
+                default:
+                    logger.info("Invalid operation");
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body(Map.of("success", false, "error", "Invalid operation: " + operation));
+            }
             return ResponseEntity.status(HttpStatus.OK).headers(headers).body(zipBytes);
         }
+
         response.put("success", true);
         response.put("error", error);
         response.put("result", result);
