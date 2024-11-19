@@ -8,7 +8,7 @@ The primary goal of this project is to convert COMTRADE files into more user-fri
 - Handle various formats including binary and ASCII
 
 ## Outputs
-- pq data for plot graph
+- Provide the data required for plotting the graph
 - csv zip output
 - json zip output
   
