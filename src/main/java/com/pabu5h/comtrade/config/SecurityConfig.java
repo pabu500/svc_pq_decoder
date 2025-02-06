@@ -28,7 +28,11 @@ public class SecurityConfig implements WebMvcConfigurer { // Implement WebMvcCon
                                 "/",
                                 "/health",
                                 "/hello",
-                                "/process_pqd"
+
+                                "/process_comtrade_file",
+                                "/process_pqd_file",
+
+                                "/process_physical_parser"
                         ).permitAll()
                         .anyRequest().authenticated());
         return http.build();

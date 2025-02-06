@@ -1,5 +1,6 @@
 package com.pabu5h.comtrade.controller;
 
+import com.pabu5h.comtrade.Util.ExcelUtil;
 import com.pabu5h.comtrade.processor.ComtradeProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -19,10 +20,12 @@ public class ComtradeController {
     Logger logger = Logger.getLogger(ComtradeController.class.getName());
     @Autowired
     private ComtradeProcessor comtradeProcessor;
+    @Autowired
+    private ExcelUtil excelUtil;
 
-    @PostMapping("process_pqd")
-    public ResponseEntity<Object> processPqd(@RequestParam("cfgFile") MultipartFile cfgFile,
-                                                         @RequestParam("datFile") MultipartFile datFile,
+    @PostMapping("process_comtrade_file")
+    public ResponseEntity<Object> processPqd(@RequestParam("cfg_file") MultipartFile cfgFile,
+                                                         @RequestParam("dat_file") MultipartFile datFile,
                                                          @RequestParam("operation") String operation,
                                                          @RequestParam(value = "sample_step", required = false, defaultValue = "1") String samplingStep,
                                                          @RequestParam(value = "filename", required = false, defaultValue = "data1") String filename) throws IOException {
@@ -47,35 +50,35 @@ public class ComtradeController {
         Object result = comtradeConfig.get("result") != null ? comtradeConfig.get("result") : new ArrayList<>();
         Object error = comtradeConfig.get("error") != null ? comtradeConfig.get("error") : new ArrayList<>();
         Map<String, Object> response = new LinkedHashMap<>();
-        if ("downloadCsvZip".equals(operation) || "downloadJsonZip".equals(operation)) {
-            if("downloadCsvZip".equals(operation)) {
-                logger.info("sending csv zip file to client");
-            }else{
-                logger.info("sending json zip file to client");
-            }
-            byte[] zipBytes;
-            try{
-                zipBytes  = (byte[]) result;
-            }catch(Exception e){
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("success",false,"error", "cannot convert to byte"));
-            }
-
-            // Set the headers for the response
-            HttpHeaders headers = new HttpHeaders();
-            headers.add("Content-Disposition", "attachment; filename=" + filename + ".zip");
-            switch(operation){
-                case "downloadCsvZip":
-                    headers.add("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-                    break;
-                case "downloadJsonZip":
-                    headers.add("Content-Type", "application/json");
-                    break;
-                default:
-                    logger.info("Invalid operation");
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                            .body(Map.of("success", false, "error", "Invalid operation: " + operation, result,new ArrayList<>()));
-            }
-            return ResponseEntity.status(HttpStatus.OK).headers(headers).body(zipBytes);
+//        if ("downloadCsvZip".equals(operation) || "downloadJsonZip".equals(operation)) {
+//            if("downloadCsvZip".equals(operation)) {
+//                logger.info("sending csv zip file to client");
+//            }else{
+//                logger.info("sending json zip file to client");
+//            }
+//            byte[] zipBytes;
+//            try{
+//                zipBytes  = (byte[]) result;
+//            }catch(Exception e){
+//                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("success",false,"error", "cannot convert to byte"));
+//            }
+//
+//            // Set the headers for the response
+//            HttpHeaders headers = new HttpHeaders();
+//            headers.add("Content-Disposition", "attachment; filename=" + filename + ".zip");
+//            headers.add("Content-Type", "application/zip");
+//            return ResponseEntity.status(HttpStatus.OK).headers(headers).body(zipBytes);
+//        }
+        Map<String,Object> data = (Map<String, Object>) result;
+        if(!Objects.equals(operation, "plotGraph")) {
+            Map<String,Object> mapResp = excelUtil.convertToZipFile(operation, filename, data, data,"comtrade");
+            byte[] zipBytes = (byte[]) mapResp.get("result");
+            HttpHeaders respHeaders = new HttpHeaders();
+            respHeaders.add("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+            respHeaders.add("Content-Disposition", "attachment; filename=\"" + filename + ".zip\"");
+            logger.info(filename + ".zip");
+            respHeaders.add("Content-Type", "application/zip");  // Correct Content-Type for ZIP files
+            return ResponseEntity.status(HttpStatus.OK).headers(respHeaders).body(zipBytes);
         }
 
         response.put("success", true);

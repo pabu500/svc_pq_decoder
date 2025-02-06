@@ -40,7 +40,7 @@ public class ComtradeModule {
                 String[] analogLine = cfgReader.readLine().split(",");
                 LinkedHashMap<String, Object> Channel = new LinkedHashMap<>();
                 Channel.put("channel_num", analogLine[0]);
-                Channel.put("name", analogLine[1]);
+                Channel.put("channel_name", analogLine[1]);
                 Channel.put("phase_id", analogLine[2]);
                 Channel.put("component_id", analogLine[3]);
                 Channel.put("unit", analogLine[4]);
@@ -62,7 +62,7 @@ public class ComtradeModule {
                 String[] analogLine = cfgReader.readLine().split(",");
                 LinkedHashMap<String, Object> Channel = new LinkedHashMap<>();
                 Channel.put("channel_num", analogLine[0]);
-                Channel.put("name", analogLine[1]);
+                Channel.put("channel_name", analogLine[1]);
                 Channel.put("phase_id", analogLine[2]);
                 Channel.put("component_id", analogLine[3]);
                 Channel.put("state", analogLine[4]);

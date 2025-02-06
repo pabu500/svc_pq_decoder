@@ -10,6 +10,5 @@ public class ComtradeApplication {
 	private ComtradeModule comtradeModule;
 	public static void main(String[] args) {
 		SpringApplication.run(ComtradeApplication.class, args);
-
 	}
 }
