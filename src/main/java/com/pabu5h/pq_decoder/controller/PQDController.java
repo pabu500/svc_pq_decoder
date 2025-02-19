@@ -3,7 +3,6 @@ package com.pabu5h.pq_decoder.controller;
 import com.pabu5h.pq_decoder.util.ExcelUtil;
 import com.pabu5h.pq_decoder.physical_parser.EndOfStreamException;
 import com.pabu5h.pq_decoder.physical_parser.PhysicalParser;
-//import com.pabu5h.comtrade.physicalParser.Record;
 import com.pabu5h.pq_decoder.processor.PhysicalParserProcessor;
 
 import lombok.extern.slf4j.Slf4j;
@@ -98,8 +97,10 @@ public class PQDController {
 
         Map<String,Object> data = (Map<String, Object>) result.get("data");
         Map<String,Object> pqdData = (Map<String, Object>) data.get("pqd_data");
-        Map<String,Object> logicalData = (Map<String, Object>) pqdData.get("logical_parser");
-        Map<String,Object> physicalData = (Map<String, Object>) pqdData.get("physical_parser");
+//        Map<String,Object> logicalData = (Map<String, Object>) pqdData.get("logical_parser");
+        ArrayList<Map<String,Object>>  logicalData = (ArrayList<Map<String, Object>>) pqdData.get("logical_parser");
+        ArrayList<Map<String,Object>>  physicalData = (ArrayList<Map<String, Object>>) pqdData.get("physical_parser");
+//        Map<String,Object> physicalData = (Map<String, Object>) pqdData.get("physical_parser");
         if(physicalData == null){
             errorMap.put("physical_parser_error", "Failed to parse physical data");
         }
@@ -108,16 +109,17 @@ public class PQDController {
         }
 
         if(!Objects.equals(operation, "plotGraph")) {
-                Map<String,Object> mapResp = excelUtil.convertToZipFile(operation, filename, data, logicalData,"pqd");
-                byte[] zipBytes = (byte[]) mapResp.get("result");
-                String uniqueFilename = filename + "_" + System.currentTimeMillis();
-                HttpHeaders respHeaders = new HttpHeaders();
-                respHeaders.add("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
-                respHeaders.add("Content-Disposition", "attachment; filename=\"" + uniqueFilename + ".zip\"");
-                logger.info(filename + ".zip");
-                respHeaders.add("Content-Type", "application/zip");  // Correct Content-Type for ZIP files
-                respHeaders.add("Content-Length", String.valueOf(zipBytes.length));
-                return ResponseEntity.status(HttpStatus.OK).headers(respHeaders).body(zipBytes);
+//                Map<String,Object> mapResp = excelUtil.convertToZipFile(operation, filename, data, logicalData,"pqd");
+//                byte[] zipBytes = (byte[]) mapResp.get("result");
+//                String uniqueFilename = filename + "_" + System.currentTimeMillis();
+//                HttpHeaders respHeaders = new HttpHeaders();
+//                respHeaders.add("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+//                respHeaders.add("Content-Disposition", "attachment; filename=\"" + uniqueFilename + ".zip\"");
+//                logger.info(filename + ".zip");
+//                respHeaders.add("Content-Type", "application/zip");  // Correct Content-Type for ZIP files
+//                respHeaders.add("Content-Length", String.valueOf(zipBytes.length));
+//                return ResponseEntity.status(HttpStatus.OK).headers(respHeaders).body(zipBytes);
+            return ResponseEntity.ok().body(Map.of("success", true, "error", errorMap, "data", data));
         }
 
         Map<String, Object> response = new LinkedHashMap<>();
