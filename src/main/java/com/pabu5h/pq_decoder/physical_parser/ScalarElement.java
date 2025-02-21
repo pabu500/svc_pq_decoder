@@ -1,21 +1,20 @@
 package com.pabu5h.pq_decoder.physical_parser;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+
 import org.apache.commons.math3.complex.Complex;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.pabu5h.pq_decoder.util.GUID;
 
 public class ScalarElement extends Element {
 
     private byte[] m_value;
 
-    public enum PhysicalType {
-        BOOLEAN1, BOOLEAN2, BOOLEAN4, CHAR1, CHAR2,
-        INTEGER1, INTEGER2, INTEGER4, UNSIGNED_INTEGER1, UNSIGNED_INTEGER2,
-        UNSIGNED_INTEGER4, REAL4, REAL8, COMPLEX8, COMPLEX16, TIMESTAMP, GUID
-    }
-
     private PhysicalType typeOfValue;
+    
+    public ElementType typeOfElement = ElementType.SCALAR;
 
     public ScalarElement() {
         this.m_value = new byte[16];
@@ -26,57 +25,70 @@ public class ScalarElement extends Element {
         return ElementType.SCALAR;
     }
 
+    public PhysicalType getTypeOfValue() {
+        return typeOfValue;
+    }
+
     public void setTypeOfValue(PhysicalType typeOfValue) {
         this.typeOfValue = typeOfValue;
     }
+    
+	public void setValue(byte[] value, int offset) {
+		System.arraycopy(value, offset, m_value, 0, typeOfValue.getByteSize());
+	}
+	
+	@Override
+	public String toString() {
+		return getClass().getSimpleName().replace("Element", "") + " [Tag=" + (getTagOfElement() == null ? null : getTagOfElement().toString()) + ", Type=" + getTypeOfValue() + "]";
+	}
 
     // Method to get the value as per the type
-    public Object get() {
-        switch (typeOfValue) {
-            case BOOLEAN1: return m_value[0] != 0;
-            case BOOLEAN2: return ByteBuffer.wrap(m_value).getShort(0) != 0;
-            case BOOLEAN4: return ByteBuffer.wrap(m_value).getInt(0) != 0;
-            case CHAR1: return new String(m_value, StandardCharsets.US_ASCII).substring(0, 1);
-            case CHAR2: return new String(m_value, StandardCharsets.UTF_16).substring(0, 1);
-            case INTEGER1: return (byte) m_value[0];
-            case INTEGER2: return ByteBuffer.wrap(m_value).getShort(0);
-            case INTEGER4: return ByteBuffer.wrap(m_value).getInt(0);
-            case UNSIGNED_INTEGER1: return m_value[0] & 0xFF;
-            case UNSIGNED_INTEGER2: return ByteBuffer.wrap(m_value).getShort(0) & 0xFFFF;
-            case UNSIGNED_INTEGER4: return ByteBuffer.wrap(m_value).getInt(0) & 0xFFFFFFFFL;
-            case REAL4: return ByteBuffer.wrap(m_value).getFloat(0);
-            case REAL8: return ByteBuffer.wrap(m_value).getDouble(0);
-            case COMPLEX8: return new Complex(ByteBuffer.wrap(m_value).getFloat(0), ByteBuffer.wrap(m_value).getFloat(4));
-            case COMPLEX16: return new Complex(ByteBuffer.wrap(m_value).getDouble(0), ByteBuffer.wrap(m_value).getDouble(8));
-            case TIMESTAMP: return new java.sql.Timestamp(ByteBuffer.wrap(m_value).getLong(0));
-            case GUID: return UUID.nameUUIDFromBytes(m_value);
-            default: throw new IllegalArgumentException("Unknown physical type");
-        }
-    }
+//    public Object get() {
+//        switch (typeOfValue) {
+//            case BOOLEAN1: return m_value[0] != 0;
+//            case BOOLEAN2: return ByteBuffer.wrap(m_value).getShort(0) != 0;
+//            case BOOLEAN4: return ByteBuffer.wrap(m_value).getInt(0) != 0;
+//            case CHAR1: return new String(m_value, StandardCharsets.US_ASCII).substring(0, 1);
+//            case CHAR2: return new String(m_value, StandardCharsets.UTF_16).substring(0, 1);
+//            case INTEGER1: return (byte) m_value[0];
+//            case INTEGER2: return ByteBuffer.wrap(m_value).getShort(0);
+//            case INTEGER4: return ByteBuffer.wrap(m_value).getInt(0);
+//            case UNSIGNED_INTEGER1: return m_value[0] & 0xFF;
+//            case UNSIGNED_INTEGER2: return ByteBuffer.wrap(m_value).getShort(0) & 0xFFFF;
+//            case UNSIGNED_INTEGER4: return ByteBuffer.wrap(m_value).getInt(0) & 0xFFFFFFFFL;
+//            case REAL4: return ByteBuffer.wrap(m_value).getFloat(0);
+//            case REAL8: return ByteBuffer.wrap(m_value).getDouble(0);
+//            case COMPLEX8: return new Complex(ByteBuffer.wrap(m_value).getFloat(0), ByteBuffer.wrap(m_value).getFloat(4));
+//            case COMPLEX16: return new Complex(ByteBuffer.wrap(m_value).getDouble(0), ByteBuffer.wrap(m_value).getDouble(8));
+//            case TIMESTAMP: return new java.sql.Timestamp(ByteBuffer.wrap(m_value).getLong(0));
+//            case GUID: return UUID.nameUUIDFromBytes(m_value);
+//            default: throw new IllegalArgumentException("Unknown physical type");
+//        }
+//    }
 
     // Method to set value according to type
-    public void set(Object value) {
-        switch (typeOfValue) {
-            case BOOLEAN1: setBoolean1((Boolean) value); break;
-            case BOOLEAN2: setBoolean2((Boolean) value); break;
-            case BOOLEAN4: setBoolean4((Boolean) value); break;
-            case CHAR1: setChar1((Character) value); break;
-            case CHAR2: setChar2((Character) value); break;
-            case INTEGER1: setInteger1((Byte) value); break;
-            case INTEGER2: setInteger2((Short) value); break;
-            case INTEGER4: setInteger4((Integer) value); break;
-            case UNSIGNED_INTEGER1: setUnsignedInteger1((Byte) value); break;
-            case UNSIGNED_INTEGER2: setUnsignedInteger2((Short) value); break;
-            case UNSIGNED_INTEGER4: setUnsignedInteger4((Integer) value); break;
-            case REAL4: setReal4((Float) value); break;
-            case REAL8: setReal8((Double) value); break;
-            case COMPLEX8: setComplex8((Complex) value); break;
-            case COMPLEX16: setComplex16((Complex) value); break;
-            case TIMESTAMP: setTimestamp((java.sql.Timestamp) value); break;
-            case GUID: setGuid((UUID) value); break;
-            default: throw new IllegalArgumentException("Unknown physical type");
-        }
-    }
+//    public void set(Object value) {
+//        switch (typeOfValue) {
+//            case BOOLEAN1: setBoolean1((Boolean) value); break;
+//            case BOOLEAN2: setBoolean2((Boolean) value); break;
+//            case BOOLEAN4: setBoolean4((Boolean) value); break;
+//            case CHAR1: setChar1((Character) value); break;
+//            case CHAR2: setChar2((Character) value); break;
+//            case INTEGER1: setInteger1((Byte) value); break;
+//            case INTEGER2: setInteger2((Short) value); break;
+//            case INTEGER4: setInteger4((Integer) value); break;
+//            case UNSIGNED_INTEGER1: setUnsignedInteger1((Byte) value); break;
+//            case UNSIGNED_INTEGER2: setUnsignedInteger2((Short) value); break;
+//            case UNSIGNED_INTEGER4: setUnsignedInteger4((Integer) value); break;
+//            case REAL4: setReal4((Float) value); break;
+//            case REAL8: setReal8((Double) value); break;
+//            case COMPLEX8: setComplex8((Complex) value); break;
+//            case COMPLEX16: setComplex16((Complex) value); break;
+//            case TIMESTAMP: setTimestamp((java.sql.Timestamp) value); break;
+//            case GUID: setGuid((UUID) value); break;
+//            default: throw new IllegalArgumentException("Unknown physical type");
+//        }
+//    }
 
 
 
@@ -151,8 +163,13 @@ public class ScalarElement extends Element {
         ByteBuffer.wrap(m_value).putLong(0, value.getTime());
     }
 
-    private void setGuid(UUID value) {
+    private void setGuid(GUID value) {
         m_value = value.toString().getBytes(StandardCharsets.UTF_8);
     }
+
+    @JsonIgnore
+	public int getUInt4() {
+		return ByteBuffer.wrap(m_value).order(ByteOrder.LITTLE_ENDIAN).getInt(0);
+	}
 }
 
