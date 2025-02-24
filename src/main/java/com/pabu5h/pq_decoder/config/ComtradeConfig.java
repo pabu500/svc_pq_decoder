@@ -1,6 +1,9 @@
 package com.pabu5h.pq_decoder.config;
 
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 
