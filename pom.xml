@@ -89,7 +89,15 @@
 					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<mainClass>com.pabu5h.pq_decoder.ComtradeApplication</mainClass>  <!-- Replace with your actual main class -->
+				</configuration>
+			</plugin>
 		</plugins>
+
 	</build>
 
 
