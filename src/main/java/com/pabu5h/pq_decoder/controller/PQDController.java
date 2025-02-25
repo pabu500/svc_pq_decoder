@@ -107,19 +107,20 @@ public class PQDController {
         if(logicalData == null){
             errorMap.put("logical_parser_error", "Failed to parse logical data");
         }
-
+        assert logicalData != null;
+        Map<String,Object> logicalDataMap = logicalData.getFirst();
         if(!Objects.equals(operation, "plotGraph")) {
-//                Map<String,Object> mapResp = excelUtil.convertToZipFile(operation, filename, data, logicalData,"pqd");
-//                byte[] zipBytes = (byte[]) mapResp.get("result");
-//                String uniqueFilename = filename + "_" + System.currentTimeMillis();
-//                HttpHeaders respHeaders = new HttpHeaders();
-//                respHeaders.add("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
-//                respHeaders.add("Content-Disposition", "attachment; filename=\"" + uniqueFilename + ".zip\"");
-//                logger.info(filename + ".zip");
-//                respHeaders.add("Content-Type", "application/zip");  // Correct Content-Type for ZIP files
-//                respHeaders.add("Content-Length", String.valueOf(zipBytes.length));
-//                return ResponseEntity.status(HttpStatus.OK).headers(respHeaders).body(zipBytes);
-            return ResponseEntity.ok().body(Map.of("success", true, "error", errorMap, "data", data));
+                Map<String,Object> mapResp = excelUtil.convertToZipFile(operation, filename, data, logicalDataMap,"pqd");
+                byte[] zipBytes = (byte[]) mapResp.get("result");
+                String uniqueFilename = filename + "_" + System.currentTimeMillis();
+                HttpHeaders respHeaders = new HttpHeaders();
+                respHeaders.add("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+                respHeaders.add("Content-Disposition", "attachment; filename=\"" + uniqueFilename + ".zip\"");
+                logger.info(filename + ".zip");
+                respHeaders.add("Content-Type", "application/zip");  // Correct Content-Type for ZIP files
+                respHeaders.add("Content-Length", String.valueOf(zipBytes.length));
+                return ResponseEntity.status(HttpStatus.OK).headers(respHeaders).body(zipBytes);
+//            return ResponseEntity.ok().body(Map.of("success", true, "error", errorMap, "data", logicalDataMap));
         }
 
         Map<String, Object> response = new LinkedHashMap<>();

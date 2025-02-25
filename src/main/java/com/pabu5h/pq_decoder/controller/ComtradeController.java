@@ -45,7 +45,7 @@ public class ComtradeController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("success",false,"error", validatedDatResult.get("error")));
         }
 
-        Map<String, Object> comtradeConfig = comtradeProcessor.processPqd(
+        Map<String, Object> comtradeConfig = comtradeProcessor.processComtradeFile(
                 cfgFile.getInputStream(), datFile.getInputStream(),step,operation,filename);
         Object result = comtradeConfig.get("result") != null ? comtradeConfig.get("result") : new ArrayList<>();
         Object error = comtradeConfig.get("error") != null ? comtradeConfig.get("error") : new ArrayList<>();
