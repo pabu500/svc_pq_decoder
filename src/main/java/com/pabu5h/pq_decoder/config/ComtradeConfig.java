@@ -24,4 +24,5 @@ public class ComtradeConfig {
     private int timeMultiplier;
     private List<LinkedHashMap<String, Object>> analogChannels;
     private List<LinkedHashMap<String, Object>> digitalChannels;
+    private int samplingRate;
 }

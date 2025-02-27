@@ -84,6 +84,7 @@ public class ComtradeProcessor {
         configMap.put("sampleRates",  String.valueOf(comtradeConfig.getSampleRates()));
         configMap.put("analogChannels", comtradeConfig.getAnalogChannels());
         configMap.put("digitalChannels", comtradeConfig.getDigitalChannels());
+        configMap.put("samplingRate", comtradeConfig.getSamplingRate());
         return Map.of("result",configMap);
     }
 }

@@ -129,7 +129,10 @@ public class ComtradeModule {
         int bytesPerSample = 4 + 4 + numOfAnalogChannels * 2 + numOfDigitalBytes * 2;
         Map<String, Object> errorMap = new HashMap<>();
 
-        for (int sampleIndex = 0; sampleIndex < numberOfSamples; sampleIndex+=step) {
+
+        List<Double> tempListOfValues = new ArrayList<>();
+        //sampling rate / resolution calculation
+        for (int sampleIndex = 0; sampleIndex < numberOfSamples; sampleIndex+=1) {
             int startIndex = sampleIndex * bytesPerSample;
             int endIndex = startIndex + bytesPerSample;
 
@@ -149,10 +152,71 @@ public class ComtradeModule {
                 errorMap.put("sample index " + sampleIndex, "Error: Unable to unpack sample data for sample index: " + sampleIndex + " , " + e.getMessage());
                 continue; // Skip this sample and move to the next one
             }
+            try {
+                //first channel
+                int firstChannelRawData = unpackedData[2]; // Adjust according to the unpacked data format
+                double multiplier = Double.parseDouble((String) comtradeConfig.getAnalogChannels().get(0).get("multiplier"));
+                double offset = Double.parseDouble((String) comtradeConfig.getAnalogChannels().get(0).get("offset"));
+                double adjustedValue = firstChannelRawData * multiplier + offset;
+                tempListOfValues.add(adjustedValue);
+            } catch (Exception e) {
+                logger.severe("Error: Unable to process analog channel data for sample index: " + sampleIndex + " , " + e.getMessage());
+                errorMap.put("analog channel " + 0, "Error: Unable to process analog channel data for sample index: " + sampleIndex + " , " + e.getMessage());
+            }
+        }
+
+        int firstNegativeValueIndex = -1;
+        int secondNegativeValueIndex = -1;
+        int samplingRate = -1;
+        //sampling rate / resolution calculation
+        for(int i=0;i<tempListOfValues.size()-1;i++){
+            // Check for negative-to-positive transitions to calculate sampling rate
+            if (firstNegativeValueIndex == -1 && tempListOfValues.get(i) < 0 && tempListOfValues.get(i+1) >= 0) {
+                firstNegativeValueIndex = i; // Store the index of the first negative value
+            } else if (firstNegativeValueIndex != -1 && secondNegativeValueIndex == -1 && tempListOfValues.get(i) < 0 && tempListOfValues.get(i+1) >= 0) {
+                secondNegativeValueIndex = i; // Store the index of the second negative-to-positive transition
+                samplingRate = secondNegativeValueIndex - firstNegativeValueIndex;
+                logger.info("First Negative Value Index: " + firstNegativeValueIndex);
+                logger.info("Second Negative Value Index: " + secondNegativeValueIndex);
+                logger.info("Sampling Rate calculated: " + samplingRate + " (second negative - first negative)");
+                comtradeConfig.setSamplingRate(samplingRate);
+                break; // Exit the loop after finding the second negative-to-positive transition
+            }
+        }
+
+        //+= step to skip samples / rows
+        for (int sampleIndex = 0; sampleIndex < numberOfSamples; sampleIndex+=step) {
+            //start -> 1*108,
+            //end -> (1*108) + 108
+            //start -> 2*108
+            //end -> (2*108) + 108
+            int startIndex = sampleIndex * bytesPerSample;
+            int endIndex = startIndex + bytesPerSample;
+
+            // Validate startIndex and endIndex to prevent IndexOutOfBoundsException
+            if (endIndex > datByteData.length) {
+                logger.warning("Error: Not enough data in datByteData for sample index: " + sampleIndex);
+                break;
+            }
+
+            //get the bytes for the sample base on the index (chunk out of the entire data)
+            byte[] sampleData = Arrays.copyOfRange(datByteData, startIndex, endIndex);
+            int[] unpackedData;
+
+            try {
+                //unpack the sample data, from byte to values. here is the decoding part
+                unpackedData = unpackSampleData(sampleData, numOfAnalogChannels, numOfDigitalBytes);
+            } catch (Exception e) {
+                logger.severe("Error: Unable to unpack sample data for sample index: " + sampleIndex + " , " + e.getMessage());
+                errorMap.put("sample index " + sampleIndex, "Error: Unable to unpack sample data for sample index: " + sampleIndex + " , " + e.getMessage());
+                continue; // Skip this sample and move to the next one
+            }
 
             // Process analog channels
             for (int i = 0; i < comtradeConfig.getAnalogChannels().size(); i++) {
                 try {
+                    //+2 as first two values in the list are for the metadata
+                    //channel data start from index 2
                     int value = unpackedData[i + 2]; // Adjust according to the unpacked data format
                     double multiplier = Double.parseDouble((String) comtradeConfig.getAnalogChannels().get(i).get("multiplier"));
                     double offset = Double.parseDouble((String) comtradeConfig.getAnalogChannels().get(i).get("offset"));
