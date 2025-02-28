@@ -77,8 +77,8 @@ public class ComtradeModule {
             int numSampleRates = Integer.parseInt(cfgReader.readLine());
             for (int i = 0; i < numSampleRates; i++) {
                 String[] sampleRateInfo = cfgReader.readLine().split(",");
-                comtradeConfig.setSampleRates(Integer.parseInt(sampleRateInfo[0]));
-                comtradeConfig.setNumOfSamples(Integer.parseInt(sampleRateInfo[1]));
+                comtradeConfig.setSampleRates(Double.parseDouble(sampleRateInfo[0]));
+                comtradeConfig.setNumOfSamples(Double.parseDouble(sampleRateInfo[1]));
             }
 
             // Read start and end timestamps
@@ -89,7 +89,7 @@ public class ComtradeModule {
             comtradeConfig.setFileType(cfgReader.readLine());
 
             // Read time multiplier
-            comtradeConfig.setTimeMultiplier(Integer.parseInt(cfgReader.readLine()));
+            comtradeConfig.setTimeMultiplier(Double.parseDouble(cfgReader.readLine()));
         }
 
         datByteData = datInputStream.readAllBytes(); // This reads the entire stream into a byte array
@@ -117,7 +117,7 @@ public class ComtradeModule {
         int numOfAnalogChannels = comtradeConfig.getNumOfAnalogChannels();
         int numOfDigitalChannels = comtradeConfig.getNumOfDigitalChannels();
         int numOfDigitalBytes = (int) Math.ceil(numOfDigitalChannels / 16.0);
-        int numberOfSamples = comtradeConfig.getNumOfSamples();
+        double numberOfSamples = comtradeConfig.getNumOfSamples();
 
         // Check for valid number of samples
         if (numberOfSamples <= 0) {

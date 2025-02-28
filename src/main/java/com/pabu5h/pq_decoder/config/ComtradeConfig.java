@@ -16,13 +16,13 @@ public class ComtradeConfig {
     private int numOfAnalogChannels;
     private int numOfDigitalChannels;
     private double lineFrequency;
-    private int sampleRates;
-    private int numOfSamples;
+    private double sampleRates;
+    private double numOfSamples;
     private String startTimestamp;
     private String endTimestamp;
     private String fileType;
-    private int timeMultiplier;
+    private double timeMultiplier;
     private List<LinkedHashMap<String, Object>> analogChannels;
     private List<LinkedHashMap<String, Object>> digitalChannels;
-    private int samplingRate;
+    private double samplingRate;
 }
