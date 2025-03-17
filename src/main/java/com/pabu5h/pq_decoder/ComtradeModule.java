@@ -168,21 +168,52 @@ public class ComtradeModule {
         int firstNegativeValueIndex = -1;
         int secondNegativeValueIndex = -1;
         int samplingRate = -1;
-        //sampling rate / resolution calculation
-        for(int i=0;i<tempListOfValues.size()-1;i++){
-            // Check for negative-to-positive transitions to calculate sampling rate
-            if (firstNegativeValueIndex == -1 && tempListOfValues.get(i) < 0 && tempListOfValues.get(i+1) >= 0) {
-                firstNegativeValueIndex = i; // Store the index of the first negative value
-            } else if (firstNegativeValueIndex != -1 && secondNegativeValueIndex == -1 && tempListOfValues.get(i) < 0 && tempListOfValues.get(i+1) >= 0) {
-                secondNegativeValueIndex = i; // Store the index of the second negative-to-positive transition
-                samplingRate = secondNegativeValueIndex - firstNegativeValueIndex;
-                logger.info("First Negative Value Index: " + firstNegativeValueIndex);
-                logger.info("Second Negative Value Index: " + secondNegativeValueIndex);
-                logger.info("Sampling Rate calculated: " + samplingRate + " (second negative - first negative)");
-                comtradeConfig.setSamplingRate(samplingRate);
-                break; // Exit the loop after finding the second negative-to-positive transition
+        double maxValue = Collections.max(tempListOfValues);
+        double minValue = Collections.max(tempListOfValues);
+        boolean isInteruption = true;
+
+        //check if the first waveform is an interruption
+        for(int i=0;i<=64;i++){
+            if((tempListOfValues.get(i)/(maxValue*0.707)) > 0.1){
+                isInteruption = false;
+                break;
             }
         }
+
+        if(!isInteruption){
+            //sampling rate / resolution calculation
+            for(int i=0;i<tempListOfValues.size()-1;i++){
+                // Check for negative-to-positive transitions to calculate sampling rate
+                if (firstNegativeValueIndex == -1 && tempListOfValues.get(i) < 0 && tempListOfValues.get(i+1) >= 0) {
+                    firstNegativeValueIndex = i; // Store the index of the first negative value
+                } else if (firstNegativeValueIndex != -1 && secondNegativeValueIndex == -1 && tempListOfValues.get(i) < 0 && tempListOfValues.get(i+1) >= 0) {
+                    secondNegativeValueIndex = i; // Store the index of the second negative-to-positive transition
+                    samplingRate = secondNegativeValueIndex - firstNegativeValueIndex;
+                    logger.info("First Negative Value Index: " + firstNegativeValueIndex);
+                    logger.info("Second Negative Value Index: " + secondNegativeValueIndex);
+                    logger.info("Sampling Rate calculated: " + samplingRate + " (second negative - first negative)");
+                    comtradeConfig.setSamplingRate(samplingRate);
+                    break; // Exit the loop after finding the second negative-to-positive transition
+                }
+            }
+        }else{
+            // Looping from the end to the start
+            for (int i = tempListOfValues.size() - 1; i >= 1; i--) {
+                // Check for negative-to-positive transitions to calculate sampling rate
+                if (firstNegativeValueIndex == -1 && tempListOfValues.get(i) < 0 && tempListOfValues.get(i-1) >= 0) {
+                    firstNegativeValueIndex = i; // Store the index of the first negative value (from the end)
+                } else if (firstNegativeValueIndex != -1 && secondNegativeValueIndex == -1 && tempListOfValues.get(i) < 0 && tempListOfValues.get(i-1) >= 0) {
+                    secondNegativeValueIndex = i; // Store the second transition from the end
+                    samplingRate = firstNegativeValueIndex - secondNegativeValueIndex; // Reversed order
+                    logger.info("First Negative Value Index: " + firstNegativeValueIndex);
+                    logger.info("Second Negative Value Index: " + secondNegativeValueIndex);
+                    logger.info("Sampling Rate calculated: " + samplingRate + " (first negative - second negative)");
+                    comtradeConfig.setSamplingRate(samplingRate);
+                    break; // Exit the loop after finding the second transition
+                }
+            }
+        }
+
 
         //+= step to skip samples / rows
         for (int sampleIndex = 0; sampleIndex < numberOfSamples; sampleIndex+=step) {
