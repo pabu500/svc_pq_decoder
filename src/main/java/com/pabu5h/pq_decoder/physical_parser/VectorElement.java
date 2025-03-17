@@ -1,46 +1,38 @@
 package com.pabu5h.pq_decoder.physical_parser;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+
 import org.apache.commons.math3.complex.Complex;
 
-@Entity
+import com.pabu5h.pq_decoder.util.GUID;
+
 public class VectorElement extends Element {  // Extend Element
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private int m_Size;
 
-    private int size; // The size of the vector
-    private int byteSize;
+    private byte[] m_value; // List of byte[] for vector values
 
-    @ElementCollection
-    private List<byte[]> m_values = new ArrayList<>(); // List of byte[] for vector values
-
-    @Enumerated(EnumType.STRING)
+//    @Enumerated(EnumType.STRING)
     private PhysicalType typeOfValue;
 
-    // Enum for types
-    public enum PhysicalType {
-        BOOLEAN1, BOOLEAN2, BOOLEAN4, CHAR1, CHAR2,
-        INTEGER1, INTEGER2, INTEGER4, UNSIGNED_INTEGER1, UNSIGNED_INTEGER2,
-        UNSIGNED_INTEGER4, REAL4, REAL8, COMPLEX8, COMPLEX16, TIMESTAMP, GUID
-    }
+//    // Enum for types
+//    public enum PhysicalType {
+//        BOOLEAN1, BOOLEAN2, BOOLEAN4, CHAR1, CHAR2,
+//        INTEGER1, INTEGER2, INTEGER4, UNSIGNED_INTEGER1, UNSIGNED_INTEGER2,
+//        UNSIGNED_INTEGER4, REAL4, REAL8, COMPLEX8, COMPLEX16, TIMESTAMP, GUID
+//    }
 
     // Default constructor for JPA
     public VectorElement() {
         // JPA requires a no-argument constructor
+    }
+
+    public PhysicalType getTypeOfValue() {
+        return typeOfValue;
     }
 
     @Override
@@ -51,113 +43,126 @@ public class VectorElement extends Element {  // Extend Element
 
 
     // Constructor
-    public VectorElement(List<byte[]> values) {
-        this.m_values = values;
-        if (!values.isEmpty()) {
-            this.typeOfValue = determineTypeOfValue(values.get(0));
+    public VectorElement(byte[] value) {
+        this.m_value = value;
+        if (value != null) {
+            this.typeOfValue = determineTypeOfValue(value);
         }
     }
 
     // Determine type of value (simple assumption here, you can enhance this logic)
     private PhysicalType determineTypeOfValue(byte[] value) {
-        return PhysicalType.BOOLEAN1; // For simplicity, default to BOOLEAN1
+        return PhysicalType.Boolean1; // For simplicity, default to BOOLEAN1
     }
 
     // Get value based on type
     public List<Object> get() {
         List<Object> result = new ArrayList<>();
-        for (byte[] value : m_values) {
-            result.add(getValueByType(value));
-        }
+//        for (byte[] value : m_values) {
+//            result.add(getValueByType(value));
+//        }
         return result;
     }
+    
+	@Override
+	public String toString() {
+		return getClass().getSimpleName().replace("Element", "") + " [Tag=" + (getTagOfElement() == null ? null : getTagOfElement().toString()) + ", Type=" + getTypeOfValue() + ", Size=" + m_Size + "]";
+	}
+    
 
     private Object getValueByType(byte[] value) {
         switch (typeOfValue) {
-            case BOOLEAN1: return value[0] != 0;
-            case BOOLEAN2: return ByteBuffer.wrap(value).getShort(0) != 0;
-            case BOOLEAN4: return ByteBuffer.wrap(value).getInt(0) != 0;
-            case CHAR1: return new String(value, StandardCharsets.US_ASCII).substring(0, 1);
-            case CHAR2: return new String(value, StandardCharsets.UTF_16).substring(0, 1);
-            case INTEGER1: return (byte) value[0];
-            case INTEGER2: return ByteBuffer.wrap(value).getShort(0);
-            case INTEGER4: return ByteBuffer.wrap(value).getInt(0);
-            case UNSIGNED_INTEGER1: return value[0] & 0xFF;
-            case UNSIGNED_INTEGER2: return ByteBuffer.wrap(value).getShort(0) & 0xFFFF;
-            case UNSIGNED_INTEGER4: return ByteBuffer.wrap(value).getInt(0) & 0xFFFFFFFFL;
-            case REAL4: return ByteBuffer.wrap(value).getFloat(0);
-            case REAL8: return ByteBuffer.wrap(value).getDouble(0);
-            case COMPLEX8: return new Complex(ByteBuffer.wrap(value).getFloat(0), ByteBuffer.wrap(value).getFloat(4));
-            case COMPLEX16: return new Complex(ByteBuffer.wrap(value).getDouble(0), ByteBuffer.wrap(value).getDouble(8));
-            case TIMESTAMP: return new Timestamp(ByteBuffer.wrap(value).getLong(0));
-            case GUID: return UUID.nameUUIDFromBytes(value);
+            case Boolean1: return value[0] != 0;
+            case Boolean2: return ByteBuffer.wrap(value).getShort(0) != 0;
+            case Boolean4: return ByteBuffer.wrap(value).getInt(0) != 0;
+            case Char1: return new String(value, StandardCharsets.US_ASCII).substring(0, 1);
+            case Char2: return new String(value, StandardCharsets.UTF_16).substring(0, 1);
+            case Integer1: return (byte) value[0];
+            case Integer2: return ByteBuffer.wrap(value).getShort(0);
+            case Integer4: return ByteBuffer.wrap(value).getInt(0);
+            case UnsignedInteger1: return value[0] & 0xFF;
+            case UnsignedInteger2: return ByteBuffer.wrap(value).getShort(0) & 0xFFFF;
+            case UnsignedInteger4: return ByteBuffer.wrap(value).getInt(0) & 0xFFFFFFFFL;
+            case Real4: return ByteBuffer.wrap(value).getFloat(0);
+            case Real8: return ByteBuffer.wrap(value).getDouble(0);
+            case Complex8: return new Complex(ByteBuffer.wrap(value).getFloat(0), ByteBuffer.wrap(value).getFloat(4));
+            case Complex16: return new Complex(ByteBuffer.wrap(value).getDouble(0), ByteBuffer.wrap(value).getDouble(8));
+            case Timestamp: return new Timestamp(ByteBuffer.wrap(value).getLong(0));
+            case Guid: return new GUID(value);
             default: throw new IllegalArgumentException("Unknown physical type");
         }
     }
 
     // Set value for the vector elements
     public void set(List<Object> values) {
-        if (values.size() != m_values.size()) {
-            throw new IllegalArgumentException("Size mismatch between values and current vector length.");
-        }
-
-        for (int i = 0; i < m_values.size(); i++) {
-            setValueByType(m_values.get(i), values.get(i));
-        }
+//        if (values.size() != m_values.size()) {
+//            throw new IllegalArgumentException("Size mismatch between values and current vector length.");
+//        }
+//
+//        for (int i = 0; i < m_values.size(); i++) {
+//            setValueByType(m_values.get(i), values.get(i));
+//        }
     }
+    
+	public void setValues(byte[] value, int offset) {
+		if (m_value == null) {
+			m_value = new byte[m_Size * typeOfValue.getByteSize()];
+		}
+		System.arraycopy(value, offset, m_value, 0, m_Size * typeOfValue.getByteSize());
+	}
 
     private void setValueByType(byte[] value, Object objectValue) {
         switch (typeOfValue) {
-            case BOOLEAN1:
+            case Boolean1:
                 setBoolean1(value, (Boolean) objectValue);
                 break;
-            case BOOLEAN2:
+            case Boolean2:
                 setBoolean2(value, (Boolean) objectValue);
                 break;
-            case BOOLEAN4:
+            case Boolean4:
                 setBoolean4(value, (Boolean) objectValue);
                 break;
-            case CHAR1:
+            case Char1:
                 setChar1(value, (Character) objectValue);
                 break;
-            case CHAR2:
+            case Char2:
                 setChar2(value, (Character) objectValue);
                 break;
-            case INTEGER1:
+            case Integer1:
                 setInteger1(value, (Byte) objectValue);
                 break;
-            case INTEGER2:
+            case Integer2:
                 setInteger2(value, (Short) objectValue);
                 break;
-            case INTEGER4:
+            case Integer4:
                 setInteger4(value, (Integer) objectValue);
                 break;
-            case UNSIGNED_INTEGER1:
+            case UnsignedInteger1:
                 setUnsignedInteger1(value, (Byte) objectValue);
                 break;
-            case UNSIGNED_INTEGER2:
+            case UnsignedInteger2:
                 setUnsignedInteger2(value, (Short) objectValue);
                 break;
-            case UNSIGNED_INTEGER4:
+            case UnsignedInteger4:
                 setUnsignedInteger4(value, (Integer) objectValue);
                 break;
-            case REAL4:
+            case Real4:
                 setReal4(value, (Float) objectValue);
                 break;
-            case REAL8:
+            case Real8:
                 setReal8(value, (Double) objectValue);
                 break;
-            case COMPLEX8:
+            case Complex8:
                 setComplex8(value, (Complex) objectValue);
                 break;
-            case COMPLEX16:
+            case Complex16:
                 setComplex16(value, (Complex) objectValue);
                 break;
-            case TIMESTAMP:
+            case Timestamp:
                 setTimestamp(value, (Timestamp) objectValue);
                 break;
-            case GUID:
-                setGuid(value, (UUID) objectValue);
+            case Guid:
+                setGuid(value, (GUID) objectValue);
                 break;
             default:
                 throw new IllegalArgumentException("Unknown physical type");
@@ -231,16 +236,16 @@ public class VectorElement extends Element {  // Extend Element
         ByteBuffer.wrap(value).putLong(0, v.getTime());
     }
 
-    private void setGuid(byte[] value, UUID v) {
+    private void setGuid(byte[] value, GUID v) {
         System.arraycopy(v.toString().getBytes(StandardCharsets.UTF_8), 0, value, 0, value.length);
     }
 
     public int getByteSize() {
-        return byteSize;
+        return m_Size;
     }
 
     public void setSize(int size) {
-        this.size = size;
+        this.m_Size = size;
     }
 
     public void setTypeOfValue(PhysicalType typeOfValue) {

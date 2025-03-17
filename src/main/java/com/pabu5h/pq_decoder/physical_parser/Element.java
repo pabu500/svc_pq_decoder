@@ -1,17 +1,22 @@
 package com.pabu5h.pq_decoder.physical_parser;
 
-import java.util.UUID;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.pabu5h.pq_decoder.util.GUID;
+import com.pabu5h.pq_decoder.util.GUID.GUIDSerializer;
 
 public abstract class Element {
-    private UUID tagOfElement;
+	
+	@JsonSerialize(using = GUIDSerializer.class)
+    private GUID tagOfElement = GUID.Empty;
     private PhysicalType typeOfValue;
 
     // Getter and Setter for TagOfElement
-    public UUID getTagOfElement() {
+    @JsonSerialize(using = GUIDSerializer.class)
+    public GUID getTagOfElement() {
         return tagOfElement;
     }
 
-    public void setTagOfElement(UUID tagOfElement) {
+    public void setTagOfElement(GUID tagOfElement) {
         this.tagOfElement = tagOfElement;
     }
 
@@ -26,5 +31,12 @@ public abstract class Element {
     public void setTypeOfValue(PhysicalType typeOfValue) {
         this.typeOfValue = typeOfValue;
     }
+
+	@Override
+	public String toString() {
+		return getClass().getSimpleName() + " [Tag=" + (tagOfElement == null ? null : tagOfElement.toString()) + ", Type=" + getTypeOfValue() + "]";
+	}
+    
+    
 }
 

@@ -1,29 +1,37 @@
 package com.pabu5h.pq_decoder.physical_parser;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 import java.util.zip.Adler32;
 import java.util.zip.InflaterInputStream;
 
-@Component
+import org.springframework.beans.factory.annotation.Value;
+
+import com.pabu5h.pq_decoder.util.GUID;
+
 public class PhysicalParser {
     Logger logger = Logger.getLogger(PhysicalParser.class.getName());
 
     private String filePath;
     private InputStream stream;
     public boolean hasNextRecord;
+    public long currentStreamPosition = 0;
     private final Set<Long> headerAddresses = new HashSet<>();
     private boolean maximumExceptionsReached = false;
-    private CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm.NONE;
-    private int compressionStyle = 0;
-
+    public CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm.None;
+    public CompressionStyle compressionStyle = CompressionStyle.None;
+    
     public PhysicalParser() {
         // Default constructor
     }
@@ -36,7 +44,7 @@ public class PhysicalParser {
         if (filePath == null || filePath.isEmpty()) {
             throw new IllegalStateException("Unable to open PQDIF file when no file name has been defined.");
         }
-
+        
         return CompletableFuture.runAsync(() -> {
             try {
                 // Open the stream but do not close it automatically
@@ -123,7 +131,7 @@ public class PhysicalParser {
 //        return new Record(header, body);
 //    }
 
-    public Record getNextRecord(long nextPosition) throws IOException {
+	public Record getNextRecord(/* long nextPosition */) throws IOException {
         if (stream == null) {
             throw new IllegalStateException("PQDIF file is not open.");
         }
@@ -142,20 +150,20 @@ public class PhysicalParser {
                 }
 
                 // Ensure the stream is buffered for efficient reading
-                if (!(stream instanceof BufferedInputStream)) {
-                    stream = new BufferedInputStream(stream);
-                }
+//                if (!(stream instanceof BufferedInputStream)) {
+//                    stream = new BufferedInputStream(stream);
+//                }
             }
 
             // Move to the correct position
-            if (nextPosition > 0) {
-                FileInputStream fileInputStream = (FileInputStream) stream;
-                long currentPosition = fileInputStream.getChannel().position();
-
-                if (nextPosition != currentPosition) {
-                    fileInputStream.getChannel().position(nextPosition);
-                }
-            }
+//            if (nextPosition > 0) {
+//                FileInputStream fileInputStream = (FileInputStream) stream;
+//                long currentPosition = fileInputStream.getChannel().position();
+//
+//                if (nextPosition != currentPosition) {
+//                    fileInputStream.getChannel().position(nextPosition);
+//                }
+//            }
 
             // Read the record header
             header = readRecordHeader(); // Reads 64 bytes from the new position
@@ -169,23 +177,60 @@ public class PhysicalParser {
         // Read the record body based on header info
         RecordBody body = readRecordBody(header.getBodySize());
 
+        if (body.getCollection().getTagOfElement() == GUID.Empty) {
+        	body.getCollection().setTagOfElement(header.getRecordTypeTag());
+        }
+        
+        long streamMaxSize = ((FileInputStream) stream).available() + ((FileInputStream) stream).getChannel().position();
+        headerAddresses.add(header.getNextRecordPosition());
+        hasNextRecord = header.getNextRecordPosition() > 0
+				&& header.getNextRecordPosition() < streamMaxSize /* m_stream.Length *//* && !MaximumExceptionsReached */;
+        ((FileInputStream) stream).getChannel().position(header.getNextRecordPosition());
+        currentStreamPosition = header.getNextRecordPosition();
+        
         return new Record(header, body);
     }
 
 
    //C# reads in little-endian, while Java's ByteBuffer defaults to big-endian.
    public RecordHeader readRecordHeader() throws IOException {
+	   
+	   
+       RecordHeader recordHeader = new RecordHeader();
+       recordHeader.setPosition(((FileInputStream) stream).getChannel().position());
+	   
        byte[] headerBytes = new byte[64];
-       int bytesRead = stream.read(headerBytes);
-       if (bytesRead < 64) {
-           throw new IOException("Insufficient bytes in header");
+//       int bytesRead = stream.read(headerBytes);
+       
+//       stream = new FileInputStream(new File("C:\\Users\\wp3\\Downloads\\svc_pq_decoder\\src\\main\\resources\\test.txt"));
+       int size = 64;
+       int num;
+       for (int offset = 0; offset < size; offset += num) {
+           int count = size - offset;
+           num = stream.read(headerBytes, offset, count);
+           if (num == 0) {
+               throw new IOException("Unexpected end of stream encountered");
+           }
        }
+//       if (bytesRead < 64) {
+//           throw new IOException("Insufficient bytes in header");
+//       }
 
        ByteBuffer buffer = ByteBuffer.wrap(headerBytes).order(ByteOrder.LITTLE_ENDIAN);
 
-       RecordHeader recordHeader = new RecordHeader();
-       recordHeader.setRecordSignature(new UUID(buffer.getLong(), buffer.getLong())); // 16 bytes
-       recordHeader.setRecordTypeTag(new UUID(buffer.getLong(), buffer.getLong())); // 16 bytes
+
+       byte[] sig = new byte[16];
+       buffer.get(sig);
+       recordHeader.setRecordSignature(new GUID(sig)); // 16 bytes
+       
+       
+       // type tag
+       byte[] tag = new byte[16];
+       buffer.get(tag);
+       recordHeader.setRecordTypeTag(new GUID(tag)); // 16 bytes
+       // end type tag
+       
+       
        recordHeader.setHeaderSize(buffer.getInt()); // 4 bytes (already in little-endian)
        recordHeader.setBodySize(buffer.getInt()); // 4 bytes
        recordHeader.setNextRecordPosition(buffer.getInt()); // 4 bytes
@@ -195,7 +240,7 @@ public class PhysicalParser {
        byte[] reserved = new byte[16];
        buffer.get(reserved); // Read the remaining 16 bytes
        recordHeader.setReserved(reserved);
-
+//4a111440-e49f-11cf-9900-505144494600 - 89738606-f1c3-11cf-9d89-0080c72e70a3
        return recordHeader;
    }
 
@@ -254,7 +299,7 @@ public class PhysicalParser {
         byte[] array = readBytesAsync(byteSize); // Read the bytes from the stream
         long checksum = Adler32(array); // Compute checksum (use a utility method to compute Adler32)
 
-        if (compressionAlgorithm == CompressionAlgorithm.ZLIB && compressionStyle != 0) {
+        if (compressionAlgorithm == CompressionAlgorithm.Zlib && compressionStyle != CompressionStyle.None) {
             array = decompress(array); // Decompress if needed
         }
 
@@ -264,13 +309,6 @@ public class PhysicalParser {
         // using a ByteBuffer in Java with ByteOrder.LITTLE_ENDIAN
         // is equivalent to using MemoryStream and BinaryReader in C#
         return new RecordBody(readCollection(buffer));
-    }
-
-    public UUID convertIntToUUID(int input) {
-        long mostSigBits = (long) input; // The input integer as the most significant bits
-        long leastSigBits = 0L; // You can use 0L or another value for the least significant bits
-
-        return new UUID(mostSigBits, leastSigBits);
     }
 
     //a checksum algorithm designed to quickly detect errors in data.
@@ -342,12 +380,12 @@ public class PhysicalParser {
 //        return collectionElement;
 //    }
 
-    public VectorElement readVector(DataInputStream recordBodyReader, PhysicalType typeOfValue) throws IOException {
+    public VectorElement readVector(ByteBuffer recordBodyReader, PhysicalType typeOfValue) throws IOException {
         // Create a new VectorElement object
         VectorElement vectorElement = new VectorElement();
 
         // Read the size (int)
-        int size = recordBodyReader.readInt();
+        int size = recordBodyReader.getInt();
         vectorElement.setSize(size); // Set the size directly
 
         // Set the type of value (e.g., Integer, Float, etc.)
@@ -355,26 +393,27 @@ public class PhysicalParser {
 
         // Read the values (byte array)
         byte[] values = new byte[size * typeOfValue.getByteSize()];
-        recordBodyReader.readFully(values); // Read the specified number of bytes into values
+        recordBodyReader.get(values); // Read the specified number of bytes into values
 
         // Set the values for the vector element (starting from index 0)
-//        vectorElement.setValues(values, 0);
+        vectorElement.setValues(values, 0);
 
         return vectorElement;
     }
 
     // Method to read a ScalarElement from the DataInputStream
-    public ScalarElement readScalar(DataInputStream recordBodyReader, PhysicalType typeOfValue) throws IOException {
+    public ScalarElement readScalar(ByteBuffer recordBodyReader, PhysicalType typeOfValue) throws IOException {
         // Create a new ScalarElement object
         ScalarElement scalarElement = new ScalarElement();
 
         // Set the type of value (e.g., Integer, Float, etc.)
         scalarElement.setTypeOfValue(typeOfValue);
 
+        
         // Read the scalar value (byte array)
         byte[] value = new byte[typeOfValue.getByteSize()];
-        recordBodyReader.readFully(value); // Read the specified number of bytes
-//        scalarElement.setValue(value, 0);
+        recordBodyReader.get(value); // Read the specified number of bytes
+        scalarElement.setValue(value, 0);
 
         return scalarElement;
     }
@@ -411,7 +450,7 @@ public class PhysicalParser {
 
         byte[] data = new byte[size];
         int num;
-        int offset = 0;
+        int offset = 0;((FileInputStream) stream).getChannel().position();
 
         while (offset < size) {
             int count = size - offset;
@@ -515,86 +554,85 @@ public class PhysicalParser {
 //        }
 //    }
 
-public Element readElement(ByteBuffer buffer) {
-    UUID tagOfElement = new UUID(0, 0);  // Initialize with an empty UUID
-    ElementType elementType = ElementType.values()[0]; // Assuming unknown as default
-    PhysicalType typeOfValue = PhysicalType.values()[0]; // Default PhysicalType
-    long position = buffer.position() + 28; // Track position, similar to C# code
+	public Element readElement(ByteBuffer buffer) {
+	    GUID tagOfElement = new GUID(0, 0);  // Initialize with an empty UUID
+	    ElementType elementType = ElementType.values()[0]; // Assuming unknown as default
+	    PhysicalType typeOfValue = PhysicalType.values()[0]; // Default PhysicalType
+	    long position = buffer.position() + 28; // Track position, similar to C# code
+	
+	    try {
+	        buffer.order(ByteOrder.LITTLE_ENDIAN);
+	        // Read the GUID (16 bytes)
+	        
+	
+	        byte[] guidBytes = new byte[16];
+	        buffer.get(guidBytes);
+	        tagOfElement = new GUID(guidBytes);
+	//        tagOfElement = new UUID(ByteBuffer.wrap(guidBytes).getLong(), ByteBuffer.wrap(guidBytes, 8, 8).getLong());
+	
+	        // Read ElementType (1 byte) and PhysicalType (1 byte)
+	//        elementType = ElementType.fromValue(Byte.toUnsignedInt(buffer.get()));
+	        byte eleNext = buffer.get();
+	        elementType = ElementType.fromValue(eleNext);
+	        
+	        byte typeNext = buffer.get();
+	        typeOfValue = PhysicalType.fromValue(typeNext);
+	
+	        // Read the boolean flag (1 byte)
+	        boolean num2 = buffer.get() != 0;
+	        buffer.get(); // Skip 1 byte (like in C# code)
+	
+	        long offset = buffer.position() + 8;  // Track the offset (like C# code)
+	
+	        if (!num2 || elementType != ElementType.SCALAR) {
+	            int num3 = buffer.getInt();  // Read an int (4 bytes)
+	            if (num3 < 0 || num3 >= buffer.capacity()) {
+	                throw new IllegalArgumentException("Element link is outside the bounds of the buffer");
+	            }
+	
+	            buffer.position(num3);  // Seek to the new position in the buffer
+	        }
+	
+	        Element element = null;
+	        switch (elementType) {
+	            case COLLECTION:
+	                element = readCollection(buffer);  // Call readCollection for COLLECTION type
+	                break;
+	            case SCALAR:
+	                element = readScalar(buffer, typeOfValue);  // Call readScalar for SCALAR type
+	                break;
+	            case VECTOR:
+	                element = readVector(buffer, typeOfValue);  // Call readVector for VECTOR type
+	                break;
+	            default:
+//	                element = new UnknownElement(elementType);
+//	                element.setTypeOfValue(typeOfValue);
+	                break;
+	        }
+	
+	        element.setTagOfElement(tagOfElement);
+	        buffer.position((int) offset);  // Restore the buffer position to the correct offset
+	        return element;
+	
+	    } catch (Exception ex) {
+	        // Add exception to your list (or log it)
+	    	ex.printStackTrace();
+	        if (position < buffer.limit()) {
+	            buffer.position((int) position);  // Reset position to a safe point
+	        } else {
+	            buffer.position(buffer.limit());  // Seek to the end of the buffer if out of bounds
+	        }
+	        Element element = null;
+	        // Return an error element in case of exception
+	        return element;
+	    }
+	}
 
-    try {
-        buffer.order(ByteOrder.LITTLE_ENDIAN);
-        // Read the GUID (16 bytes)
-        byte[] guidBytes = new byte[16];
-        buffer.get(guidBytes);
-        tagOfElement = convertBytesToUUID(guidBytes);
-//        tagOfElement = new UUID(ByteBuffer.wrap(guidBytes).getLong(), ByteBuffer.wrap(guidBytes, 8, 8).getLong());
-
-        // Read ElementType (1 byte) and PhysicalType (1 byte)
-//        elementType = ElementType.fromValue(Byte.toUnsignedInt(buffer.get()));
-        typeOfValue = PhysicalType.values()[buffer.get()];
-
-        // Read the boolean flag (1 byte)
-        boolean num2 = buffer.get() != 0;
-        buffer.get(); // Skip 1 byte (like in C# code)
-
-        long offset = buffer.position() + 8;  // Track the offset (like C# code)
-
-        if (!num2 || elementType != ElementType.SCALAR) {
-            int num3 = buffer.getInt();  // Read an int (4 bytes)
-            if (num3 < 0 || num3 >= buffer.remaining()) {
-                throw new IllegalArgumentException("Element link is outside the bounds of the buffer");
-            }
-
-            buffer.position(num3);  // Seek to the new position in the buffer
-        }
-
-        Element element = null;
-//        switch (elementType) {
-//            case COLLECTION:
-//                element = readCollection(buffer);  // Call readCollection for COLLECTION type
-//                break;
-//            case SCALAR:
-//                element = readScalar(buffer, typeOfValue);  // Call readScalar for SCALAR type
-//                break;
-//            case VECTOR:
-//                element = readVector(buffer, typeOfValue);  // Call readVector for VECTOR type
-//                break;
-//            default:
-//                element = new UnknownElement(elementType);
-//                element.setTypeOfValue(typeOfValue);
-//                break;
-//        }
-//
-//        element.setTagOfElement(tagOfElement);
-//        buffer.position((int) offset);  // Restore the buffer position to the correct offset
-        return element;
-
-    } catch (Exception ex) {
-        // Add exception to your list (or log it)
-        if (position < buffer.limit()) {
-            buffer.position((int) position);  // Reset position to a safe point
-        } else {
-            buffer.position(buffer.limit());  // Seek to the end of the buffer if out of bounds
-        }
-        Element element = null;
-        // Return an error element in case of exception
-        return element;
-    }
-}
-
-    private static UUID convertBytesToUUID(byte[] bytes) {
-        long msb = 0;
-        long lsb = 0;
-        for (int i = 0; i < 8; i++) {
-            msb = (msb << 8) | (bytes[i] & 0xFF);
-        }
-        for (int i = 8; i < 16; i++) {
-            lsb = (lsb << 8) | (bytes[i] & 0xFF);
-        }
-        return new UUID(msb, lsb);
-    }
-
-
+	private byte getByte(ByteBuffer byteBuffer) {
+		byte[] bytes = new byte[1];
+		byteBuffer.get(bytes);
+		return bytes[0];
+	}
 
     // Reset parser state
     private void reset() {
@@ -613,7 +651,47 @@ public Element readElement(ByteBuffer buffer) {
         }
     }
 
+//	public static void print(InputStream stream, String mark) {
+//		try {
+//			byte[] headerBytes = new byte[64];
+//
+//			int size = 64;
+//			int num;
+//			for (int offset = 0; offset < size; offset += num) {
+//				int count = size - offset;
+//				num = stream.read(headerBytes, offset, count);
+//				if (num == 0) {
+//					throw new IOException("Unexpected end of stream encountered");
+//				}
+//			}
+//
+//			ByteBuffer byteBuffer = ByteBuffer.wrap(headerBytes).order(ByteOrder.LITTLE_ENDIAN);
+//			System.out.println("==================");
+//			System.out.println(byteBuffer.getLong());
+//			System.out.println(byteBuffer.getLong());
+//			System.out.println(byteBuffer.getLong());
+//			System.out.println(byteBuffer.getLong());
+//			
+//			System.out.println("==================");
+//			
+//			System.out.println(byteBuffer.getInt());
+//			System.out.println(byteBuffer.getInt());
+//			System.out.println(byteBuffer.getInt());
+//			System.out.println(byteBuffer.getInt());
+//			
+//			ByteBuffer.wrap(new byte[] {(byte) 8, (byte)3, (byte)0, (byte)0}).order(ByteOrder.LITTLE_ENDIAN).getInt();
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//	}
 
 
+//	public static void main(String[] args) throws FileNotFoundException {
+//		print(new java.io.FileInputStream("C:\\Users\\wp3\\Downloads\\svc_pq_decoder\\src\\main\\resources\\TAMPINES NT 22kV DE_20230208001841.pqd"), "lol");
+//	}
 
+    
+    public static void main(String[] args) {
+
+	}
 }

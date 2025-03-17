@@ -1,8 +1,10 @@
 package com.pabu5h.pq_decoder.controller;
 
 import com.pabu5h.pq_decoder.util.ExcelUtil;
+import com.pabu5h.pq_decoder.logical_parser.ContainerRecord;
 import com.pabu5h.pq_decoder.physical_parser.EndOfStreamException;
 import com.pabu5h.pq_decoder.physical_parser.PhysicalParser;
+import com.pabu5h.pq_decoder.physical_parser.Record;
 import com.pabu5h.pq_decoder.processor.PhysicalParserProcessor;
 
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +15,7 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -43,8 +46,6 @@ public class PQDController {
     @Autowired
     private ExcelUtil excelUtil;
 
-    @Autowired
-    private com.pabu5h.pq_decoder.physical_parser.Record record;
 
 
     @PostMapping("/process_pqd_file")
@@ -132,32 +133,37 @@ public class PQDController {
         );
     }
 
-    @PostMapping("/process_physical_parser")
+    @GetMapping("/process_physical_parser")
     public ResponseEntity<Map<String,Object>> physicalParser() throws IOException, EndOfStreamException, ExecutionException, InterruptedException {
         PhysicalParser physicalParser = new PhysicalParser(filePath);
-        long nextPosition = 0;
-        physicalParser.openAsync().get(); // This will block until the file is opened
-        if (physicalParser.hasNextRecord) {  // Initial check
-            log.info("Reading first record...");
-            record = physicalParser.getNextRecord(nextPosition);
 
-            // Get next record position
-           nextPosition = record.getHeader().getNextRecordPosition();
+        physicalParser.openAsync().get(); // This will block until the file is opened
+        // Initial check
+        int count = 0;
+        List<Record> recordsList = new ArrayList<>();
+        while (physicalParser.hasNextRecord) {
+        	if (count == 0) {
+        		log.info("Reading first record...");
+        	} else {
+        		// Get next record position
+                long nextPosition = physicalParser.currentStreamPosition;
+                log.info("Reading next record at position: " + nextPosition);
+        	}
+
 
             // Read subsequent records
-            while (nextPosition > 0) {  // If nextPosition is 0, we stop
-                log.info("Reading next record at position: " + nextPosition);
-                record = physicalParser.getNextRecord(nextPosition);
-                nextPosition = record.getHeader().getNextRecordPosition(); // Update next position
-            }
+			Record record = physicalParser.getNextRecord();
+			ContainerRecord containerRecord = ContainerRecord.createContainerRecord(record);
+			if (containerRecord != null) {
+				physicalParser.compressionAlgorithm = containerRecord.getCompressionAlgorithm();
+				physicalParser.compressionStyle = containerRecord.getCompressionStyle();
+			}
+
+			log.info("Record " + (count++) + ": --> " + record);
+			recordsList.add(record);
         }
-//        while(physicalParser.hasNextRecord){
-//            log.info("next record found");
-//            physicalParser.getNextRecord();
-////            physicalParser.getNextRecord();
-////            Record record = physicalParser.getNextRecord();
-//        }
-        return ResponseEntity.ok().body(Map.of("success", true, "data", "aa"));
+
+        return ResponseEntity.ok().body(Map.of("success", true, "data", recordsList));
     }
 
 //    @PostMapping("/process_logical_parser")

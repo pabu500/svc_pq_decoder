@@ -1,15 +1,24 @@
 package com.pabu5h.pq_decoder.physical_parser;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.pabu5h.pq_decoder.util.GUID;
 
-import lombok.*;
-import java.util.*;
+import lombok.Data;
 
 @Data
 public class CollectionElement extends Element {
-    private final List<Element> elements;
+    private List<Element> elements;
     private int readSize;
+    
+    @JsonIgnore
+    private PhysicalType typeOfValue;
+    
+    @JsonIgnore
+    public PhysicalType getTypeOfValue() {
+        return typeOfValue;
+    }
 
     // The size of the collection
     public int size() {
@@ -33,7 +42,16 @@ public class CollectionElement extends Element {
 
     // create a collection element with size of the num that is passed in
     public CollectionElement(int size) {
-        this.elements = new ArrayList<>(size);  // Initialize the list of elements
+//        this.elements = new ArrayList<>(size);  // Initialize the list of elements
+        
+    	if (size < 0) {
+    		size = size * -1;
+    	}
+    	try {
+    		this.elements = new ArrayList<>(size);
+		} catch (Throwable e) {
+			this.elements = new ArrayList<>(size);
+		}
         this.readSize = size;
     }
 
@@ -53,12 +71,12 @@ public class CollectionElement extends Element {
     }
 
     // Remove elements by tag
-    public void removeElementsByTag(UUID tag) {
+    public void removeElementsByTag(GUID tag) {
         elements.removeIf(element -> element.getTagOfElement().equals(tag));
     }
 
     // Get elements by tag
-    public List<Element> getElementsByTag(UUID tag) {
+    public List<Element> getElementsByTag(GUID tag) {
         List<Element> result = new ArrayList<>();
         for (Element element : elements) {
             if (element.getTagOfElement().equals(tag)) {
@@ -69,7 +87,7 @@ public class CollectionElement extends Element {
     }
 
     // Get a collection by tag
-    public CollectionElement getCollectionByTag(UUID tag) {
+    public CollectionElement getCollectionByTag(GUID tag) {
         for (Element element : elements) {
             if (element.getTagOfElement().equals(tag)) {
                 return (CollectionElement) element;
@@ -79,9 +97,9 @@ public class CollectionElement extends Element {
     }
 
     // Get a scalar element by tag
-    public ScalarElement getScalarByTag(UUID tag) {
+    public ScalarElement getScalarByTag(GUID tag) {
         for (Element element : elements) {
-            if (element.getTagOfElement().equals(tag)) {
+            if (element instanceof ScalarElement && element.getTagOfElement().equals(tag)) {
                 return (ScalarElement) element;
             }
         }
@@ -89,7 +107,7 @@ public class CollectionElement extends Element {
     }
 
     // Get a vector element by tag
-    public VectorElement getVectorByTag(UUID tag) {
+    public VectorElement getVectorByTag(GUID tag) {
         for (Element element : elements) {
             if (element.getTagOfElement().equals(tag)) {
                 return (VectorElement) element;
@@ -99,7 +117,7 @@ public class CollectionElement extends Element {
     }
 
     // Get or add scalar element
-    public ScalarElement getOrAddScalar(UUID tag) {
+    public ScalarElement getOrAddScalar(GUID tag) {
         ScalarElement scalarElement = getScalarByTag(tag);
         if (scalarElement == null) {
             scalarElement = new ScalarElement();
@@ -110,7 +128,7 @@ public class CollectionElement extends Element {
     }
 
     // Get or add vector element
-    public VectorElement getOrAddVector(UUID tag) {
+    public VectorElement getOrAddVector(GUID tag) {
         VectorElement vectorElement = getVectorByTag(tag);
         if (vectorElement == null) {
             vectorElement = new VectorElement();
@@ -121,7 +139,7 @@ public class CollectionElement extends Element {
     }
 
     // Add or update scalar element
-    public ScalarElement addOrUpdateScalar(UUID tag, PhysicalType type, byte[] bytes) {
+    public ScalarElement addOrUpdateScalar(GUID tag, PhysicalType type, byte[] bytes) {
         ScalarElement scalarElement = getOrAddScalar(tag);
         scalarElement.setTypeOfValue(type);
         // scalarElement.setValue(bytes, 0); // Uncomment and use this if necessary
@@ -129,7 +147,7 @@ public class CollectionElement extends Element {
     }
 
     // Add or update vector element
-    public VectorElement addOrUpdateVector(UUID tag, PhysicalType type, byte[] bytes) {
+    public VectorElement addOrUpdateVector(GUID tag, PhysicalType type, byte[] bytes) {
         VectorElement vectorElement = getOrAddVector(tag);
         vectorElement.setTypeOfValue(type);
         vectorElement.setSize(bytes.length / type.getByteSize());

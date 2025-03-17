@@ -1,18 +1,24 @@
 package com.pabu5h.pq_decoder.physical_parser;
 
-import org.springframework.stereotype.Component;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.pabu5h.pq_decoder.util.GUID;
+import com.pabu5h.pq_decoder.util.GUID.GUIDSerializer;
 
-import java.util.UUID;
-
-@Component
 public class RecordHeader {
     private long position;
-    private UUID recordSignature;
-    private UUID recordTypeTag;
+    
+    @JsonSerialize(using = GUIDSerializer.class)
+    private GUID recordSignature;
+    
+    @JsonSerialize(using = GUIDSerializer.class)
+    private GUID recordTypeTag;
+    
     private int headerSize;
     private int bodySize;
     private int nextRecordPosition;
     private long checksum; // Unsigned int
+    @JsonIgnore
     private byte[] reserved;
 
     // Getters and Setters
@@ -24,19 +30,21 @@ public class RecordHeader {
         this.position = position;
     }
 
-    public UUID getRecordSignature() {
+    @JsonSerialize(using = GUIDSerializer.class)
+    public GUID getRecordSignature() {
         return recordSignature;
     }
 
-    public void setRecordSignature(UUID recordSignature) {
+    public void setRecordSignature(GUID recordSignature) {
         this.recordSignature = recordSignature;
     }
 
-    public UUID getRecordTypeTag() {
+    @JsonSerialize(using = GUIDSerializer.class)
+    public GUID getRecordTypeTag() {
         return recordTypeTag;
     }
 
-    public void setRecordTypeTag(UUID recordTypeTag) {
+    public void setRecordTypeTag(GUID recordTypeTag) {
         this.recordTypeTag = recordTypeTag;
     }
 
@@ -92,4 +100,12 @@ public class RecordHeader {
                 ", checksum=" + checksum +
                 '}';
     }
+
+	public RecordType getTypeOfRecord() {
+		RecordType rs = Record.RecordTypeTagMap.get(recordTypeTag);
+		if (rs == null) {
+			rs = RecordType.Unknown;
+		}
+		return rs;
+	}
 }
