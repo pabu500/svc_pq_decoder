@@ -77,8 +77,8 @@ public class ComtradeModule {
             int numSampleRates = Integer.parseInt(cfgReader.readLine());
             for (int i = 0; i < numSampleRates; i++) {
                 String[] sampleRateInfo = cfgReader.readLine().split(",");
-                comtradeConfig.setSampleRates(Integer.parseInt(sampleRateInfo[0]));
-                comtradeConfig.setNumOfSamples(Integer.parseInt(sampleRateInfo[1]));
+                comtradeConfig.setSampleRates(Double.parseDouble(sampleRateInfo[0]));
+                comtradeConfig.setNumOfSamples(Double.parseDouble(sampleRateInfo[1]));
             }
 
             // Read start and end timestamps
@@ -89,7 +89,7 @@ public class ComtradeModule {
             comtradeConfig.setFileType(cfgReader.readLine());
 
             // Read time multiplier
-            comtradeConfig.setTimeMultiplier(Integer.parseInt(cfgReader.readLine()));
+            comtradeConfig.setTimeMultiplier(Double.parseDouble(cfgReader.readLine()));
         }
 
         datByteData = datInputStream.readAllBytes(); // This reads the entire stream into a byte array
@@ -117,7 +117,7 @@ public class ComtradeModule {
         int numOfAnalogChannels = comtradeConfig.getNumOfAnalogChannels();
         int numOfDigitalChannels = comtradeConfig.getNumOfDigitalChannels();
         int numOfDigitalBytes = (int) Math.ceil(numOfDigitalChannels / 16.0);
-        int numberOfSamples = comtradeConfig.getNumOfSamples();
+        double numberOfSamples = comtradeConfig.getNumOfSamples();
 
         // Check for valid number of samples
         if (numberOfSamples <= 0) {
@@ -129,7 +129,10 @@ public class ComtradeModule {
         int bytesPerSample = 4 + 4 + numOfAnalogChannels * 2 + numOfDigitalBytes * 2;
         Map<String, Object> errorMap = new HashMap<>();
 
-        for (int sampleIndex = 0; sampleIndex < numberOfSamples; sampleIndex+=step) {
+
+        List<Double> tempListOfValues = new ArrayList<>();
+        //sampling rate / resolution calculation
+        for (int sampleIndex = 0; sampleIndex < numberOfSamples; sampleIndex+=1) {
             int startIndex = sampleIndex * bytesPerSample;
             int endIndex = startIndex + bytesPerSample;
 
@@ -149,10 +152,102 @@ public class ComtradeModule {
                 errorMap.put("sample index " + sampleIndex, "Error: Unable to unpack sample data for sample index: " + sampleIndex + " , " + e.getMessage());
                 continue; // Skip this sample and move to the next one
             }
+            try {
+                //first channel
+                int firstChannelRawData = unpackedData[2]; // Adjust according to the unpacked data format
+                double multiplier = Double.parseDouble((String) comtradeConfig.getAnalogChannels().get(0).get("multiplier"));
+                double offset = Double.parseDouble((String) comtradeConfig.getAnalogChannels().get(0).get("offset"));
+                double adjustedValue = firstChannelRawData * multiplier + offset;
+                tempListOfValues.add(adjustedValue);
+            } catch (Exception e) {
+                logger.severe("Error: Unable to process analog channel data for sample index: " + sampleIndex + " , " + e.getMessage());
+                errorMap.put("analog channel " + 0, "Error: Unable to process analog channel data for sample index: " + sampleIndex + " , " + e.getMessage());
+            }
+        }
+
+        int firstNegativeValueIndex = -1;
+        int secondNegativeValueIndex = -1;
+        int samplingRate = -1;
+        double maxValue = Collections.max(tempListOfValues);
+        double minValue = Collections.max(tempListOfValues);
+        boolean isInteruption = true;
+
+        //check if the first waveform is an interruption
+        for(int i=0;i<=64;i++){
+            if((tempListOfValues.get(i)/(maxValue*0.707)) > 0.1){
+                isInteruption = false;
+                break;
+            }
+        }
+
+        if(!isInteruption){
+            //sampling rate / resolution calculation
+            for(int i=0;i<tempListOfValues.size()-1;i++){
+                // Check for negative-to-positive transitions to calculate sampling rate
+                if (firstNegativeValueIndex == -1 && tempListOfValues.get(i) < 0 && tempListOfValues.get(i+1) >= 0) {
+                    firstNegativeValueIndex = i; // Store the index of the first negative value
+                } else if (firstNegativeValueIndex != -1 && secondNegativeValueIndex == -1 && tempListOfValues.get(i) < 0 && tempListOfValues.get(i+1) >= 0) {
+                    secondNegativeValueIndex = i; // Store the index of the second negative-to-positive transition
+                    samplingRate = secondNegativeValueIndex - firstNegativeValueIndex;
+                    logger.info("First Negative Value Index: " + firstNegativeValueIndex);
+                    logger.info("Second Negative Value Index: " + secondNegativeValueIndex);
+                    logger.info("Sampling Rate calculated: " + samplingRate + " (second negative - first negative)");
+                    comtradeConfig.setSamplingRate(samplingRate);
+                    break; // Exit the loop after finding the second negative-to-positive transition
+                }
+            }
+        }else{
+            // Looping from the end to the start
+            for (int i = tempListOfValues.size() - 1; i >= 1; i--) {
+                // Check for negative-to-positive transitions to calculate sampling rate
+                if (firstNegativeValueIndex == -1 && tempListOfValues.get(i) < 0 && tempListOfValues.get(i-1) >= 0) {
+                    firstNegativeValueIndex = i; // Store the index of the first negative value (from the end)
+                } else if (firstNegativeValueIndex != -1 && secondNegativeValueIndex == -1 && tempListOfValues.get(i) < 0 && tempListOfValues.get(i-1) >= 0) {
+                    secondNegativeValueIndex = i; // Store the second transition from the end
+                    samplingRate = firstNegativeValueIndex - secondNegativeValueIndex; // Reversed order
+                    logger.info("First Negative Value Index: " + firstNegativeValueIndex);
+                    logger.info("Second Negative Value Index: " + secondNegativeValueIndex);
+                    logger.info("Sampling Rate calculated: " + samplingRate + " (first negative - second negative)");
+                    comtradeConfig.setSamplingRate(samplingRate);
+                    break; // Exit the loop after finding the second transition
+                }
+            }
+        }
+
+
+        //+= step to skip samples / rows
+        for (int sampleIndex = 0; sampleIndex < numberOfSamples; sampleIndex+=step) {
+            //start -> 1*108,
+            //end -> (1*108) + 108
+            //start -> 2*108
+            //end -> (2*108) + 108
+            int startIndex = sampleIndex * bytesPerSample;
+            int endIndex = startIndex + bytesPerSample;
+
+            // Validate startIndex and endIndex to prevent IndexOutOfBoundsException
+            if (endIndex > datByteData.length) {
+                logger.warning("Error: Not enough data in datByteData for sample index: " + sampleIndex);
+                break;
+            }
+
+            //get the bytes for the sample base on the index (chunk out of the entire data)
+            byte[] sampleData = Arrays.copyOfRange(datByteData, startIndex, endIndex);
+            int[] unpackedData;
+
+            try {
+                //unpack the sample data, from byte to values. here is the decoding part
+                unpackedData = unpackSampleData(sampleData, numOfAnalogChannels, numOfDigitalBytes);
+            } catch (Exception e) {
+                logger.severe("Error: Unable to unpack sample data for sample index: " + sampleIndex + " , " + e.getMessage());
+                errorMap.put("sample index " + sampleIndex, "Error: Unable to unpack sample data for sample index: " + sampleIndex + " , " + e.getMessage());
+                continue; // Skip this sample and move to the next one
+            }
 
             // Process analog channels
             for (int i = 0; i < comtradeConfig.getAnalogChannels().size(); i++) {
                 try {
+                    //+2 as first two values in the list are for the metadata
+                    //channel data start from index 2
                     int value = unpackedData[i + 2]; // Adjust according to the unpacked data format
                     double multiplier = Double.parseDouble((String) comtradeConfig.getAnalogChannels().get(i).get("multiplier"));
                     double offset = Double.parseDouble((String) comtradeConfig.getAnalogChannels().get(i).get("offset"));

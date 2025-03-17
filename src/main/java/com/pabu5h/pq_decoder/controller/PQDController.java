@@ -98,17 +98,20 @@ public class PQDController {
 
         Map<String,Object> data = (Map<String, Object>) result.get("data");
         Map<String,Object> pqdData = (Map<String, Object>) data.get("pqd_data");
-        Map<String,Object> logicalData = (Map<String, Object>) pqdData.get("logical_parser");
-        Map<String,Object> physicalData = (Map<String, Object>) pqdData.get("physical_parser");
+//        Map<String,Object> logicalData = (Map<String, Object>) pqdData.get("logical_parser");
+        ArrayList<Map<String,Object>>  logicalData = (ArrayList<Map<String, Object>>) pqdData.get("logical_parser");
+        ArrayList<Map<String,Object>>  physicalData = (ArrayList<Map<String, Object>>) pqdData.get("physical_parser");
+//        Map<String,Object> physicalData = (Map<String, Object>) pqdData.get("physical_parser");
         if(physicalData == null){
             errorMap.put("physical_parser_error", "Failed to parse physical data");
         }
         if(logicalData == null){
             errorMap.put("logical_parser_error", "Failed to parse logical data");
         }
-
+        assert logicalData != null;
+        Map<String,Object> logicalDataMap = logicalData.getFirst();
         if(!Objects.equals(operation, "plotGraph")) {
-                Map<String,Object> mapResp = excelUtil.convertToZipFile(operation, filename, data, logicalData,"pqd");
+                Map<String,Object> mapResp = excelUtil.convertToZipFile(operation, filename, data, logicalDataMap,"pqd");
                 byte[] zipBytes = (byte[]) mapResp.get("result");
                 String uniqueFilename = filename + "_" + System.currentTimeMillis();
                 HttpHeaders respHeaders = new HttpHeaders();
@@ -118,6 +121,7 @@ public class PQDController {
                 respHeaders.add("Content-Type", "application/zip");  // Correct Content-Type for ZIP files
                 respHeaders.add("Content-Length", String.valueOf(zipBytes.length));
                 return ResponseEntity.status(HttpStatus.OK).headers(respHeaders).body(zipBytes);
+//            return ResponseEntity.ok().body(Map.of("success", true, "error", errorMap, "data", logicalDataMap));
         }
 
         Map<String, Object> response = new LinkedHashMap<>();
@@ -132,12 +136,12 @@ public class PQDController {
     @GetMapping("/process_physical_parser")
     public ResponseEntity<Map<String,Object>> physicalParser() throws IOException, EndOfStreamException, ExecutionException, InterruptedException {
         PhysicalParser physicalParser = new PhysicalParser(filePath);
-        
+
         physicalParser.openAsync().get(); // This will block until the file is opened
         // Initial check
         int count = 0;
         List<Record> recordsList = new ArrayList<>();
-        while (physicalParser.hasNextRecord) { 
+        while (physicalParser.hasNextRecord) {
         	if (count == 0) {
         		log.info("Reading first record...");
         	} else {
@@ -145,7 +149,7 @@ public class PQDController {
                 long nextPosition = physicalParser.currentStreamPosition;
                 log.info("Reading next record at position: " + nextPosition);
         	}
-            
+
 
             // Read subsequent records
 			Record record = physicalParser.getNextRecord();
@@ -154,11 +158,11 @@ public class PQDController {
 				physicalParser.compressionAlgorithm = containerRecord.getCompressionAlgorithm();
 				physicalParser.compressionStyle = containerRecord.getCompressionStyle();
 			}
-			
+
 			log.info("Record " + (count++) + ": --> " + record);
 			recordsList.add(record);
         }
-        
+
         return ResponseEntity.ok().body(Map.of("success", true, "data", recordsList));
     }
 

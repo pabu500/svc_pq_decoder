@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.pabu5h</groupId>
 	<artifactId>comtrade</artifactId>
-	<version>1.0.4</version>
+	<version>1.1.4</version>
 	<name>comtrade</name>
 	<description>comtrade</description>
 	<url/>
@@ -52,11 +52,14 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
+		<!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<optional>true</optional>
+			<version>1.18.36</version>
+			<scope>provided</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
@@ -67,18 +70,31 @@
 	<build>
 		<plugins>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.8.1</version>
+				<configuration>
+					<source>22</source>   <!-- Replace with your Java version -->
+					<target>22</target>   <!-- Replace with your Java version -->
+					<annotationProcessorPaths>
+						<annotationProcessorPath>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+							<version>1.18.36</version>  <!-- Use the same version as in the dependency -->
+						</annotationProcessorPath>
+					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
-					<excludes>
-						<exclude>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</exclude>
-					</excludes>
+					<mainClass>com.pabu5h.pq_decoder.ComtradeApplication</mainClass>  <!-- Replace with your actual main class -->
 				</configuration>
 			</plugin>
 		</plugins>
+
 	</build>
+
 
 </project>

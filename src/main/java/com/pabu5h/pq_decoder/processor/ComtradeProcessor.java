@@ -21,7 +21,7 @@ public class ComtradeProcessor {
     public ComtradeProcessor(ComtradeModule comtradeModule) {
         this.comtradeModule = comtradeModule; // Ensure it's being set correctly
     }
-    public Map<String, Object> processPqd(InputStream cfgInputStream, InputStream datInputStream, int step, String operation,String filename) throws IOException {
+    public Map<String, Object> processComtradeFile(InputStream cfgInputStream, InputStream datInputStream, int step, String operation,String filename) throws IOException {
         Map<String, Object> result = comtradeModule.processCfgConfig(cfgInputStream, datInputStream, step);
         ComtradeConfig comtradeResult = (ComtradeConfig) result.get("result");
         Map<String, Object> convertedConfigMap = convertConfigFieldsToMap(comtradeResult);
@@ -84,6 +84,7 @@ public class ComtradeProcessor {
         configMap.put("sampleRates",  String.valueOf(comtradeConfig.getSampleRates()));
         configMap.put("analogChannels", comtradeConfig.getAnalogChannels());
         configMap.put("digitalChannels", comtradeConfig.getDigitalChannels());
+        configMap.put("samplingRate", comtradeConfig.getSamplingRate());
         return Map.of("result",configMap);
     }
 }
