@@ -16,6 +16,8 @@ public class VectorElement extends Element {  // Extend Element
 
     private byte[] m_value; // List of byte[] for vector values
 
+    public ElementType typeOfElement = ElementType.VECTOR;
+
 //    @Enumerated(EnumType.STRING)
     private PhysicalType typeOfValue;
 

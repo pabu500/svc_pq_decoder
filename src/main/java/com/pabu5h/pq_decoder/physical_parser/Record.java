@@ -14,10 +14,12 @@ public class Record {
 	
     private final RecordHeader header;
     private final RecordBody body;
+//    private final RecordType recordType;  // NEW: Store the type of record
 
     public Record(RecordHeader header, RecordBody body) {
         this.header = header;
         this.body = body;
+//        this.recordType = determineRecordType(header);
     }
     
     private static Map<GUID, RecordType> createRecordTypeTagMap() {
@@ -31,5 +33,13 @@ public class Record {
         
     	return rs;
     }
+
+    private RecordType determineRecordType(RecordHeader header) {
+        return RecordTypeTagMap.getOrDefault(header.getRecordTypeTag(), RecordType.Unknown);
+    }
+
+//    public RecordType getRecordType() {
+//        return this.recordType;
+//    }
 }
 

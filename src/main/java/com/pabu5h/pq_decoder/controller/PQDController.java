@@ -1,5 +1,6 @@
 package com.pabu5h.pq_decoder.controller;
 
+import com.pabu5h.pq_decoder.logical_parser.LogicalParser;
 import com.pabu5h.pq_decoder.util.ExcelUtil;
 import com.pabu5h.pq_decoder.logical_parser.ContainerRecord;
 import com.pabu5h.pq_decoder.physical_parser.EndOfStreamException;
@@ -166,17 +167,31 @@ public class PQDController {
         return ResponseEntity.ok().body(Map.of("success", true, "data", recordsList));
     }
 
-//    @PostMapping("/process_logical_parser")
-//    public ResponseEntity<Map<String,Object>> logicalParser() throws IOException, EndOfStreamException, ExecutionException, InterruptedException {
-//        PhysicalParser physicalParser = new PhysicalParser(filePath);
-//        physicalParser.openAsync().get(); // This will block until the file is opened
+    @GetMapping("/process_logical_parser")
+    public ResponseEntity<Map<String,Object>> logicalParser() throws IOException, EndOfStreamException, ExecutionException, InterruptedException {
+//        LogicalParser logicalParser = new LogicalParser(filePath);
+//        logicalParser.openAsync();
+//        while (logicalParser.hasNextRecord) {
+//            if (count == 0) {
+//                log.info("Reading first record...");
+//            } else {
+//                // Get next record position
+//                long nextPosition = physicalParser.currentStreamPosition;
+//                log.info("Reading next record at position: " + nextPosition);
+//            }
 //
-//        while(physicalParser.hasNextRecord){
-//            log.info("next record found");
-//            physicalParser.getNextRecord();
-////            physicalParser.getNextRecord();
-////            Record record = physicalParser.getNextRecord();
+//
+//            // Read subsequent records
+//            Record record = physicalParser.getNextRecord();
+//            ContainerRecord containerRecord = ContainerRecord.createContainerRecord(record);
+//            if (containerRecord != null) {
+//                physicalParser.compressionAlgorithm = containerRecord.getCompressionAlgorithm();
+//                physicalParser.compressionStyle = containerRecord.getCompressionStyle();
+//            }
+//
+//            log.info("Record " + (count++) + ": --> " + record);
+//            recordsList.add(record);
 //        }
-//        return ResponseEntity.ok().body(Map.of("success", true, "data", "aa"));
-//    }
+        return ResponseEntity.ok().body(Map.of("success", true, "data", "aa"));
+    }
 }

@@ -11,6 +11,7 @@ import lombok.Data;
 public class CollectionElement extends Element {
     private List<Element> elements;
     private int readSize;
+    private ElementType typeOfElement = ElementType.COLLECTION;
     
     @JsonIgnore
     private PhysicalType typeOfValue;
