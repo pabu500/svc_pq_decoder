@@ -18,6 +18,7 @@ public class RecordHeader {
     private int bodySize;
     private int nextRecordPosition;
     private long checksum; // Unsigned int
+    private String typeOfRecord;
     @JsonIgnore
     private byte[] reserved;
 
@@ -108,4 +109,9 @@ public class RecordHeader {
 		}
 		return rs;
 	}
+    public void setRecordType() {
+        typeOfRecord = this.getTypeOfRecord().toString();
+    }
+
+
 }

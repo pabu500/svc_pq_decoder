@@ -19,7 +19,9 @@ import java.util.zip.InflaterInputStream;
 import org.springframework.beans.factory.annotation.Value;
 
 import com.pabu5h.pq_decoder.util.GUID;
+import org.springframework.stereotype.Component;
 
+@Component
 public class PhysicalParser {
     Logger logger = Logger.getLogger(PhysicalParser.class.getName());
 
@@ -31,10 +33,6 @@ public class PhysicalParser {
     private boolean maximumExceptionsReached = false;
     public CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm.None;
     public CompressionStyle compressionStyle = CompressionStyle.None;
-    
-    public PhysicalParser() {
-        // Default constructor
-    }
 
     public PhysicalParser(@Value("${file.path}") String filePath) {
         logger.info("PhysicalParser created with file path: " + filePath);
@@ -58,78 +56,6 @@ public class PhysicalParser {
             }
         });
     }
-
-
-//    public void getNextRecord1() throws IOException {
-//        if (stream == null) {
-//            logger.info("PQDIF file is not open.");
-//            throw new IllegalStateException("PQDIF file is not open.");
-//        }
-//
-//        if (!hasNextRecord) {
-//            reset();
-//        }
-//
-//        try {
-//            if (stream instanceof FileInputStream) {
-//                logger.info("opening pqdif file");
-//                FileInputStream fileInputStream = (FileInputStream) stream;
-//                if (!fileInputStream.getFD().valid()) {
-//                    throw new IllegalStateException("File input stream is closed.");
-//                }
-//            }
-//
-//            // Proceed to read the next record's header
-//            RecordHeader header = readRecordHeader(stream);
-//
-//        } catch (IOException e) {
-//            throw new IOException("Error reading from stream: " + e.getMessage(), e);
-//        }
-//
-//
-//    }
-
-//    public Record getNextRecord() throws IOException {
-//        RecordHeader header;
-//        if (stream == null) {
-//            throw new IllegalStateException("PQDIF file is not open.");
-//        }
-//
-//        if (!hasNextRecord) {
-//            reset();
-//        }
-//
-//        try {
-//            if (stream instanceof FileInputStream) {
-//                FileInputStream fileInputStream = (FileInputStream) stream;
-//                if (!fileInputStream.getFD().valid()) {
-//                    throw new IllegalStateException("File input stream is closed.");
-//                }
-//            }
-//
-//            // Proceed to read the next record's header
-//            header = readRecordHeader();
-////            long nextPosition = header.getNextRecordPosition(); // Get next position
-////            if (nextPosition > 0) {
-////                stream.skip(nextPosition - header.getPosition()); // Adjust streamPosition as you track manually
-////                header.setPosition(nextPosition); // Update your stream position tracker
-////            } else {
-////                hasNextRecord = false; // No more records
-////            }
-//            logger.info(header.toString());
-//        } catch (IOException e) {
-//            throw new IOException("Error reading from stream: " + e.getMessage(), e);
-//        }
-//        RecordBody body = readRecordBody(header.getBodySize());
-//
-//        hasNextRecord = header.getNextRecordPosition() > 0 &&
-//                header.getNextRecordPosition() < stream.available() &&
-//                headerAddresses.add(header.getNextRecordPosition()) &&
-//                !maximumExceptionsReached;
-//
-//        stream.skip(header.getNextRecordPosition());
-//        return new Record(header, body);
-//    }
 
 	public Record getNextRecord(/* long nextPosition */) throws IOException {
         if (stream == null) {
@@ -235,7 +161,7 @@ public class PhysicalParser {
        recordHeader.setBodySize(buffer.getInt()); // 4 bytes
        recordHeader.setNextRecordPosition(buffer.getInt()); // 4 bytes
        recordHeader.setChecksum(Integer.toUnsignedLong(buffer.getInt())); // Convert signed int to unsigned long
-
+       recordHeader.setRecordType();
        // Correctly reading the reserved 16 bytes
        byte[] reserved = new byte[16];
        buffer.get(reserved); // Read the remaining 16 bytes
