@@ -6,8 +6,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.pabu5h.pq_decoder.util.GUID;
 
 import lombok.Data;
+import org.springframework.stereotype.Component;
 
 @Data
+@Component
 public class CollectionElement extends Element {
     private List<Element> elements;
     private int readSize;

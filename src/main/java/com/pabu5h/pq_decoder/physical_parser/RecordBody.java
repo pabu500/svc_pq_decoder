@@ -5,12 +5,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.springframework.stereotype.Component;
 
 @Getter
 @Setter
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
+@Component
 public class RecordBody {
 
     private CollectionElement collection;

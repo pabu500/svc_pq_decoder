@@ -1,6 +1,7 @@
 package com.pabu5h.pq_decoder.controller;
 
 import com.pabu5h.pq_decoder.logical_parser.LogicalParser;
+import com.pabu5h.pq_decoder.logical_parser.ObservationRecord;
 import com.pabu5h.pq_decoder.util.ExcelUtil;
 import com.pabu5h.pq_decoder.logical_parser.ContainerRecord;
 import com.pabu5h.pq_decoder.physical_parser.EndOfStreamException;
@@ -169,29 +170,15 @@ public class PQDController {
 
     @GetMapping("/process_logical_parser")
     public ResponseEntity<Map<String,Object>> logicalParser() throws IOException, EndOfStreamException, ExecutionException, InterruptedException {
-//        LogicalParser logicalParser = new LogicalParser(filePath);
-//        logicalParser.openAsync();
-//        while (logicalParser.hasNextRecord) {
-//            if (count == 0) {
-//                log.info("Reading first record...");
-//            } else {
-//                // Get next record position
-//                long nextPosition = physicalParser.currentStreamPosition;
-//                log.info("Reading next record at position: " + nextPosition);
-//            }
-//
-//
-//            // Read subsequent records
-//            Record record = physicalParser.getNextRecord();
-//            ContainerRecord containerRecord = ContainerRecord.createContainerRecord(record);
-//            if (containerRecord != null) {
-//                physicalParser.compressionAlgorithm = containerRecord.getCompressionAlgorithm();
-//                physicalParser.compressionStyle = containerRecord.getCompressionStyle();
-//            }
-//
-//            log.info("Record " + (count++) + ": --> " + record);
-//            recordsList.add(record);
-//        }
+        LogicalParser logicalParser = new LogicalParser(filePath);
+        logicalParser.openAsync();
+        List<ObservationRecord> recordsList = new ArrayList<>();
+
+        while(logicalParser.hasNextObservationRecordAsync()){
+
+            ObservationRecord record = logicalParser.nextObservationRecordAsync();
+            recordsList.add(record);
+        }
         return ResponseEntity.ok().body(Map.of("success", true, "data", "aa"));
     }
 }

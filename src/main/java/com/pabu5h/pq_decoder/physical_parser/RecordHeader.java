@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.pabu5h.pq_decoder.util.GUID;
 import com.pabu5h.pq_decoder.util.GUID.GUIDSerializer;
+import org.springframework.stereotype.Component;
 
+@Component
 public class RecordHeader {
     private long position;
     

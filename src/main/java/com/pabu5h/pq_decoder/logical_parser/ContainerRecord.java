@@ -6,7 +6,9 @@ import com.pabu5h.pq_decoder.physical_parser.Record;
 import com.pabu5h.pq_decoder.physical_parser.RecordType;
 import com.pabu5h.pq_decoder.physical_parser.ScalarElement;
 import com.pabu5h.pq_decoder.util.GUID;
+import org.springframework.stereotype.Component;
 
+@Component
 public class ContainerRecord {
 	
     public static GUID TitleTag = new GUID("8973860d-f1c3-11cf-9d89-0080c72e70a3");

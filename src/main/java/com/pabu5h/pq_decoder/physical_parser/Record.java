@@ -6,8 +6,10 @@ import java.util.Map;
 import com.pabu5h.pq_decoder.util.GUID;
 
 import lombok.Getter;
+import org.springframework.stereotype.Component;
 
 @Getter
+@Component
 public class Record {
 	
 	public static final Map<GUID, RecordType> RecordTypeTagMap = createRecordTypeTagMap();
