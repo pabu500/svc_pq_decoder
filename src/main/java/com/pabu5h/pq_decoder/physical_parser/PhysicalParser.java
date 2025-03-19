@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.FileChannel;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -562,8 +563,22 @@ public class PhysicalParser {
 
     // Reset parser state
     private void reset() {
-        hasNextRecord = false;
+        if(stream==null){
+            logger.info("PQDIF file is not open.");
+        }
+        this.compressionAlgorithm = CompressionAlgorithm.None;
+        this.compressionStyle = CompressionStyle.None;
+        hasNextRecord = true;
         headerAddresses.clear();
+        try {
+            if (stream instanceof FileInputStream fileInputStream) {
+                // Reset the file pointer to the beginning of the file
+                fileInputStream.reset();
+                fileInputStream.getChannel().position(0);
+            }
+        } catch (IOException e) {
+            logger.info("Error while resetting the file pointer: " + e.getMessage());
+        }
     }
 
     // Close the file

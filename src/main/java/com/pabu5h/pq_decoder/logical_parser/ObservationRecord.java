@@ -16,20 +16,20 @@ public class ObservationRecord {
     private String observationId;
     private String observationValue;
 
-    private ObservationRecord(Record physicalRecord, DataSourceRecord dataSourceRecord, MonitorSettingRecord settings){
+    private ObservationRecord(Record physicalRecord, DataSourceRecord dataSource, MonitorSettingRecord settings){
         this.physicalRecord = physicalRecord;
-        this.dataSource = dataSourceRecord;
+        this.dataSource = dataSource;
         this.settings = settings;
     }
 
 //    public String getName() {
 //        VectorElement
 //    }
-    public static ObservationRecord createObservationRecord(Record physicalRecord, DataSourceRecord dataSourceRecord, MonitorSettingRecord settings){
+    public static ObservationRecord createObservationRecord(Record physicalRecord, DataSourceRecord dataSource, MonitorSettingRecord settings){
         if(physicalRecord.getHeader().getTypeOfRecord()!= RecordType.Observation){
             return null;
         }
-        return new ObservationRecord(physicalRecord,dataSourceRecord,settings);
+        return new ObservationRecord(physicalRecord,dataSource,settings);
     }
     // Add fields, constructors, getters, setters, and toString
 }

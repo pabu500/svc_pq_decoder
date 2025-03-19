@@ -169,16 +169,25 @@ public class PQDController {
     }
 
     @GetMapping("/process_logical_parser")
-    public ResponseEntity<Map<String,Object>> logicalParser() throws IOException, EndOfStreamException, ExecutionException, InterruptedException {
+    public ResponseEntity<Map<String, Object>> logicalParser() throws IOException, EndOfStreamException, ExecutionException, InterruptedException {
+        Map<String, Object> logicalData = new HashMap<>();
+
+        // Ensure the file is opened and the records are processed
         LogicalParser logicalParser = new LogicalParser(filePath);
-        logicalParser.openAsync();
+        logicalParser.openAsync().get();  // Wait until the file is opened
+
         List<ObservationRecord> recordsList = new ArrayList<>();
 
-        while(logicalParser.hasNextObservationRecordAsync()){
-
-            ObservationRecord record = logicalParser.nextObservationRecordAsync();
+        // Use while loop to iterate through records and check the boolean flag directly
+        while (logicalParser.hasNextObservationRecordAsync()) {  // Directly check the boolean result
+            // Await the next record asynchronously and wait for the result (use .get() on the CompletableFuture)
+            ObservationRecord record = logicalParser.nextObservationRecordAsync().get();  // This retrieves the actual record
             recordsList.add(record);
         }
-        return ResponseEntity.ok().body(Map.of("success", true, "data", "aa"));
+
+
+        logicalData.put("logical_parser", recordsList);  // Store the list of records
+        return ResponseEntity.ok().body(Map.of("success", true, "data", logicalData));
     }
+
 }
