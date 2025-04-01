@@ -215,6 +215,10 @@ public class VectorElement extends Element {  // Extend Element
     private void setUnsignedInteger4(byte[] value, Integer v) {
         ByteBuffer.wrap(value).putInt(0, v);
     }
+    
+    public void setUInt4(int value, int v) {
+//        ByteBuffer.wrap(value).putInt(0, v);
+    }
 
     private void setReal4(byte[] value, Float v) {
         ByteBuffer.wrap(value).putFloat(0, v);
@@ -253,4 +257,23 @@ public class VectorElement extends Element {  // Extend Element
     public void setTypeOfValue(PhysicalType typeOfValue) {
         this.typeOfValue = typeOfValue;
     }
+
+	public byte[] getValues() {
+		return m_value;
+	}
+
+	public double getUInt4(int i) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	public void set(int i, Object start) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public Object get(int i) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

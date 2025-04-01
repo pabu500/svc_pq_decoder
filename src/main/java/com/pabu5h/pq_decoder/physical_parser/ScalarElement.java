@@ -1,11 +1,12 @@
 package com.pabu5h.pq_decoder.physical_parser;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.math3.complex.Complex;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.pabu5h.pq_decoder.util.BitConverter;
+import com.pabu5h.pq_decoder.util.DateTime;
 import com.pabu5h.pq_decoder.util.GUID;
 
 public class ScalarElement extends Element {
@@ -145,7 +146,7 @@ public class ScalarElement extends Element {
         ByteBuffer.wrap(m_value).putFloat(0, value);
     }
 
-    private void setReal8(Double value) {
+    public void setReal8(Double value) {
         ByteBuffer.wrap(m_value).putDouble(0, value);
     }
 
@@ -159,17 +160,68 @@ public class ScalarElement extends Element {
         ByteBuffer.wrap(m_value).putDouble(8, value.getImaginary());
     }
 
-    private void setTimestamp(java.sql.Timestamp value) {
+    public void setTimestamp(DateTime value) {
         ByteBuffer.wrap(m_value).putLong(0, value.getTime());
     }
 
-    private void setGuid(GUID value) {
-        m_value = value.toString().getBytes(StandardCharsets.UTF_8);
+    public void setGuid(GUID value) {
+       //  m_value = value.toString().getBytes(StandardCharsets.UTF_8);
     }
 
     @JsonIgnore
 	public int getUInt4() {
 		return ByteBuffer.wrap(m_value).order(ByteOrder.LITTLE_ENDIAN).getInt(0);
+	}
+    
+    @JsonIgnore
+    public GUID getGuid() {
+    	return new GUID(m_value);
+    }
+
+    @JsonIgnore
+	public DateTime getTimestamp() {
+		return DateTime.getTimestamp(m_value);
+	}
+
+	public void setUInt4(int value) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@JsonIgnore
+	public double getReal8() {
+		return BitConverter.toDouble(m_value);
+	}
+
+	public void setReal8(int value) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@JsonIgnore
+	public boolean getBool4() {
+		return BitConverter.toUInt32(m_value) != 0;
+	}
+
+	public void setBool4(boolean value) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@JsonIgnore
+	public short getInt2() {
+		return (short) BitConverter.toUInt2(m_value);
+	}
+
+	public void setInt2(int value) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@JsonIgnore
+	public Object get() {
+		// TODO Auto-generated method stub
+		return m_value;
 	}
 }
 

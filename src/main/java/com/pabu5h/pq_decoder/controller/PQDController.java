@@ -1,7 +1,9 @@
 package com.pabu5h.pq_decoder.controller;
 
 import com.pabu5h.pq_decoder.logical_parser.LogicalParser;
+import com.pabu5h.pq_decoder.logical_parser.ObservationRecord;
 import com.pabu5h.pq_decoder.util.ExcelUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pabu5h.pq_decoder.logical_parser.ContainerRecord;
 import com.pabu5h.pq_decoder.physical_parser.EndOfStreamException;
 import com.pabu5h.pq_decoder.physical_parser.PhysicalParser;
@@ -110,7 +112,7 @@ public class PQDController {
             errorMap.put("logical_parser_error", "Failed to parse logical data");
         }
         assert logicalData != null;
-        Map<String,Object> logicalDataMap = logicalData.getFirst();
+        Map<String,Object> logicalDataMap = logicalData.isEmpty() ? null : logicalData.get(0);
         if(!Objects.equals(operation, "plotGraph")) {
                 Map<String,Object> mapResp = excelUtil.convertToZipFile(operation, filename, data, logicalDataMap,"pqd");
                 byte[] zipBytes = (byte[]) mapResp.get("result");
@@ -169,6 +171,23 @@ public class PQDController {
 
     @GetMapping("/process_logical_parser")
     public ResponseEntity<Map<String,Object>> logicalParser() throws IOException, EndOfStreamException, ExecutionException, InterruptedException {
+    	
+    	Map<String, Object> logicalData = new LinkedHashMap<>();
+    	try {
+    		LogicalParser logicalParser = new LogicalParser(filePath);
+    		logicalParser.open();
+    		
+    		List<ObservationRecord> recordsList = new ArrayList<>();
+    		
+    		while (logicalParser.hasNextObservationRecord()) {
+    			recordsList.add(logicalParser.nextObservationRecord());
+			}
+    		
+    		logicalData.put("logical_parser", recordsList);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    	
 //        LogicalParser logicalParser = new LogicalParser(filePath);
 //        logicalParser.openAsync();
 //        while (logicalParser.hasNextRecord) {
@@ -192,6 +211,27 @@ public class PQDController {
 //            log.info("Record " + (count++) + ": --> " + record);
 //            recordsList.add(record);
 //        }
-        return ResponseEntity.ok().body(Map.of("success", true, "data", "aa"));
+        return ResponseEntity.ok().body(Map.of("success", true, "data", logicalData));
     }
+    
+    public static void main(String[] args) {
+    	Map<String, Object> logicalData = new LinkedHashMap<>();
+    	try {
+    		String filePath = "C:\\Users\\yaoyj\\Desktop\\pq_decoder_henry\\svc_pq_decoder_2_april\\src\\main\\resources\\TAMPINES NT 22kV DE_20230208001841.pqd";
+    		LogicalParser logicalParser = new LogicalParser(filePath);
+    		logicalParser.open();
+    		
+    		List<ObservationRecord> recordsList = new ArrayList<>();
+    		
+    		while (logicalParser.hasNextObservationRecord()) {
+    			ObservationRecord record = logicalParser.nextObservationRecord();
+    			System.out.println(new ObjectMapper().writeValueAsString(record));
+    			recordsList.add(record);
+			}
+    		
+    		logicalData.put("logical_parser", recordsList);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 }
