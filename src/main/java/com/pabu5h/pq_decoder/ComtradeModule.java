@@ -170,15 +170,31 @@ public class ComtradeModule {
         int samplingRate = -1;
         double maxValue = Collections.max(tempListOfValues);
         double minValue = Collections.max(tempListOfValues);
-        boolean isInteruption = true;
-
+        boolean isInteruption = false;
         //check if the first waveform is an interruption
-        for(int i=0;i<=64;i++){
-            if((tempListOfValues.get(i)/(maxValue*0.707)) > 0.1){
-                isInteruption = false;
+        boolean firstIndexFound= false;
+        int firstIndex=0;
+        int secondIndex=0;
+        for(int i=0;i<tempListOfValues.size()-1;i++){
+            if(tempListOfValues.get(i) < 0 && tempListOfValues.get(i+1) >= 0 && !firstIndexFound){
+                firstIndex = i;
+                firstIndexFound = true;
+            }
+            else if(tempListOfValues.get(i) < 0 && tempListOfValues.get(i+1) >= 0 && firstIndexFound){
+                secondIndex = i;
                 break;
             }
         }
+        if(secondIndex-firstIndex <60){
+            isInteruption= true;
+        }
+
+//        for(int i=0;i<=64;i++){
+//            if((tempListOfValues.get(i)/(maxValue*0.707)) > (0.1*maxValue)){
+//                isInteruption = false;
+//                break;
+//            }
+//        }
 
         if(!isInteruption){
             //sampling rate / resolution calculation
