@@ -170,15 +170,31 @@ public class ComtradeModule {
         int samplingRate = -1;
         double maxValue = Collections.max(tempListOfValues);
         double minValue = Collections.max(tempListOfValues);
-        boolean isInteruption = true;
-
+        boolean isInteruption = false;
         //check if the first waveform is an interruption
-        for(int i=0;i<=64;i++){
-            if((tempListOfValues.get(i)/(maxValue*0.707)) > 0.1){
-                isInteruption = false;
+        boolean firstIndexFound= false;
+        int firstIndex=0;
+        int secondIndex=0;
+        for(int i=0;i<tempListOfValues.size()-1;i++){
+            if(tempListOfValues.get(i) < 0 && tempListOfValues.get(i+1) >= 0 && !firstIndexFound){
+                firstIndex = i;
+                firstIndexFound = true;
+            }
+            else if(tempListOfValues.get(i) < 0 && tempListOfValues.get(i+1) >= 0 && firstIndexFound){
+                secondIndex = i;
                 break;
             }
         }
+        if(secondIndex-firstIndex <60){
+            isInteruption= true;
+        }
+
+//        for(int i=0;i<=64;i++){
+//            if((tempListOfValues.get(i)/(maxValue*0.707)) > (0.1*maxValue)){
+//                isInteruption = false;
+//                break;
+//            }
+//        }
 
         if(!isInteruption){
             //sampling rate / resolution calculation
@@ -354,11 +370,11 @@ public class ComtradeModule {
             final int index = i; // Create a final variable to use in the lambda expression
             List<Double> values = data.stream()
                     .map(row -> row.get(index))
-                    .toList();
+                    .collect(Collectors.toList());
             if (comtradeConfig.getAnalogChannels().size() > i) {
                 double multiplier = Double.parseDouble((String) comtradeConfig.getAnalogChannels().get(i).get("multiplier"));
                 double offSet = Double.parseDouble((String) comtradeConfig.getAnalogChannels().get(i).get("offset"));
-                List<Double> adjustedValues = values.stream().map(value -> value * multiplier + offSet).toList();
+                List<Double> adjustedValues = values.stream().map(value -> value * multiplier + offSet).collect(Collectors.toList());
                 comtradeConfig.getAnalogChannels().get(index).put("values", adjustedValues);
             } else {
                 logger.warning("Index out of bounds for analog channels: " + i);
@@ -366,7 +382,7 @@ public class ComtradeModule {
             }
         }
 
-        data = data.stream().map(row -> row.subList(nAnalogChannels, row.size())).toList();
+        data = data.stream().map(row -> row.subList(nAnalogChannels, row.size())).collect(Collectors.toList());;
 
         int nDigitalChannels = comtradeConfig.getNumOfDigitalChannels();
         for (int i = 0; i < nDigitalChannels; i++) { // Corrected here

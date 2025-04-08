@@ -1,6 +1,9 @@
 package com.pabu5h.pq_decoder.physical_parser;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -8,6 +11,7 @@ import java.util.List;
 
 import org.apache.commons.math3.complex.Complex;
 
+import com.pabu5h.pq_decoder.util.DateTime;
 import com.pabu5h.pq_decoder.util.GUID;
 
 public class VectorElement extends Element {  // Extend Element
@@ -70,7 +74,187 @@ public class VectorElement extends Element {  // Extend Element
 	public String toString() {
 		return getClass().getSimpleName().replace("Element", "") + " [Tag=" + (getTagOfElement() == null ? null : getTagOfElement().toString()) + ", Type=" + getTypeOfValue() + ", Size=" + m_Size + "]";
 	}
+	
+    public Object get(int index)
+    {
+        switch (typeOfValue)
+        {
+            case Boolean1:
+                return getUInt1(index) != 0;
+
+            case Boolean2:
+                return getInt2(index) != 0;
+
+            case Boolean4:
+                return getInt4(index) != 0;
+
+            case Char1:
+				return /* Encoding.ASCII.GetString(m_values)[index] */new String(new byte[] {m_value[index]}, StandardCharsets.US_ASCII);
+
+            case Char2:
+				return /* Encoding.Unicode.GetString(m_values)[index] */new String(new byte[] {m_value[index]}, StandardCharsets.UTF_8);
+
+            case Integer1:
+                return getInt1(index);
+
+            case Integer2:
+                return getInt2(index);
+
+            case Integer4:
+                return getInt4(index);
+
+            case UnsignedInteger1:
+                return getUInt1(index);
+
+            case UnsignedInteger2:
+                return getUInt2(index);
+
+            case UnsignedInteger4:
+                return getUInt4(index);
+
+            case Real4:
+                return getReal4(index);
+
+            case Real8:
+                return getReal8(index);
+
+            case Complex8:
+                return new ComplexNumber(getReal4(index * 2).doubleValue(), getReal4(index * 2 + 1).doubleValue());
+
+            case Complex16:
+                return new ComplexNumber(getReal8(index * 2), getReal8(index * 2 + 1));
+
+            case Timestamp:
+                return getTimestamp(index);
+
+            case Guid:
+            	
+            	byte[] tmp = new byte[16];
+            	System.arraycopy(tmp, 0, m_value, index * 16, tmp.length);
+				return new GUID(/* m_values.BlockCopy(index * 16, 16) */tmp);
+
+            default:
+                throw new IndexOutOfBoundsException();
+        }
+    }
     
+	public byte getUInt1(int index) {
+		return (byte) m_value[index];
+	}
+	
+	public byte getInt1(int index) {
+		return (byte) m_value[index];
+	}
+	
+    /// <summary>
+    /// Gets a value in this vector as a 16-bit unsigned integer.
+    /// </summary>
+    /// <param name="index">The index of the value.</param>
+    /// <returns>The value as a 16-bit unsigned integer.</returns>
+	public int getInt2(int index) {
+		
+		byte[] tmp = new byte[16];
+		int byteIndex = index * 2;
+		System.arraycopy(m_value, byteIndex, tmp, 0, 16);
+		return ByteBuffer.wrap(tmp).order(ByteOrder.LITTLE_ENDIAN).getInt();
+	}
+	
+    /// <summary>
+    /// Gets a value in this vector as a 16-bit unsigned integer.
+    /// </summary>
+    /// <param name="index">The index of the value.</param>
+    /// <returns>The value as a 16-bit unsigned integer.</returns>
+	public int getUInt2(int index) {
+		
+		byte[] tmp = new byte[16];
+		int byteIndex = index * 2;
+		System.arraycopy(m_value, byteIndex, tmp, 0, 16);
+		return ByteBuffer.wrap(tmp).order(ByteOrder.LITTLE_ENDIAN).getInt();
+	}
+	
+	public int getInt4(int index) {
+		
+		byte[] tmp = new byte[32];
+		int byteIndex = index * 4;
+		System.arraycopy(m_value, byteIndex, tmp, 0, 32);
+		return ByteBuffer.wrap(tmp).order(ByteOrder.LITTLE_ENDIAN).getInt();
+	}
+	
+    /// <summary>
+    /// Gets a value in this vector as a 32-bit unsigned integer.
+    /// </summary>
+    /// <param name="index">The index of the value.</param>
+    /// <returns>The value as a 32-bit unsigned integer.</returns>
+	public int getUInt4(int index) {
+		
+		byte[] tmp = new byte[32];
+		int byteIndex = index * 4;
+		System.arraycopy(m_value, byteIndex, tmp, 0, 32);
+		return ByteBuffer.wrap(tmp).order(ByteOrder.LITTLE_ENDIAN).getInt();
+	}
+    
+	
+    /// <summary>
+    /// Gets a value in this vector as a 32-bit floating point number.
+    /// </summary>
+    /// <param name="index">The index of the value.</param>
+    /// <returns>The value as a 32-bit floating point number.</returns>
+    public BigDecimal getReal4(int index) {
+		byte[] tmp = new byte[32];
+		int byteIndex = index * 4;
+		System.arraycopy(m_value, byteIndex, tmp, 0, 32);
+		
+		double tmpdb = ByteBuffer.wrap(tmp).order(ByteOrder.LITTLE_ENDIAN).getDouble();
+		return new BigDecimal(tmpdb).setScale(tmpdb == 0d ? 0 : 20, RoundingMode.HALF_UP);
+    }
+    
+    public BigDecimal getReal8(int index) {
+		int byteIndex = index * 8;
+		byte[] tmp = new byte[64];
+		
+		try {
+			
+			int copyLength = (m_value.length - 1 - byteIndex) >= tmp.length ? tmp.length : (m_value.length - 1 - byteIndex);
+			System.arraycopy(m_value, byteIndex, tmp, 0, copyLength);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		double tmpdb = ByteBuffer.wrap(tmp).order(ByteOrder.LITTLE_ENDIAN).getDouble();
+		return new BigDecimal(tmpdb).setScale(tmpdb == 0d ? 0 : 20, RoundingMode.HALF_UP);
+    }
+    
+    public DateTime getTimestamp(int index) {
+        if (m_value == null)
+            throw new RuntimeException("Unable to retrieve values from uninitialized vector; set the size and physical type of the vector first");
+
+        int byteIndex = index * 12;
+
+        DateTime epoch = new DateTime(1900, 1, 1);
+        int days = getInt4(index); // LittleEndian.ToUInt32(m_values, byteIndex);
+        
+        byte[] tmp = new byte[m_value.length - (byteIndex + 4)];
+        System.arraycopy(m_value, byteIndex + 4, tmp, 0, tmp.length);
+        double seconds = ByteBuffer.wrap(tmp).order(ByteOrder.LITTLE_ENDIAN).getDouble();//LittleEndian.ToDouble(m_values, byteIndex + 4);
+
+        // Timestamps in a PQDIF file are represented by two separate numbers, one being the number of
+        // days since January 1, 1900 and the other being the number of seconds since midnight. The
+        // standard implementation also includes a constant for the number of days between January 1,
+        // 1900 and January 1, 1970 to facilitate the conversion between PQDIF timestamps and UNIX
+        // timestamps. However, the constant defined in the standard is 25569 days, whereas the actual
+        // number of days between those two dates is 25567 days; a two day difference. That is why we
+        // need to also subtract two days here when parsing PQDIF timestamps.
+        return epoch.addDays(days - 2).addSeconds(seconds);
+    }
+    
+    public static class ComplexNumber {
+    	public Object Real;
+    	public Object Imaginary;
+    	public ComplexNumber(Number nb1, Number nb2) {
+    		Real = nb1;
+    		Imaginary = nb2;
+    	}
+    }
+
 
     private Object getValueByType(byte[] value) {
         switch (typeOfValue) {
@@ -215,6 +399,10 @@ public class VectorElement extends Element {  // Extend Element
     private void setUnsignedInteger4(byte[] value, Integer v) {
         ByteBuffer.wrap(value).putInt(0, v);
     }
+    
+    public void setUInt4(int value, int v) {
+//        ByteBuffer.wrap(value).putInt(0, v);
+    }
 
     private void setReal4(byte[] value, Float v) {
         ByteBuffer.wrap(value).putFloat(0, v);
@@ -242,7 +430,7 @@ public class VectorElement extends Element {  // Extend Element
         System.arraycopy(v.toString().getBytes(StandardCharsets.UTF_8), 0, value, 0, value.length);
     }
 
-    public int getByteSize() {
+    public int getSize() {
         return m_Size;
     }
 
@@ -253,4 +441,23 @@ public class VectorElement extends Element {  // Extend Element
     public void setTypeOfValue(PhysicalType typeOfValue) {
         this.typeOfValue = typeOfValue;
     }
+
+	public byte[] getValues() {
+		return m_value;
+	}
+
+//	public double getUInt4(int i) {
+//		// TODO Auto-generated method stub
+//		return 0;
+//	}
+
+	public void set(int i, Object start) {
+		// TODO Auto-generated method stub
+		
+	}
+
+//	public Object get(int i) {
+//		// TODO Auto-generated method stub
+//		return null;
+//	}
 }

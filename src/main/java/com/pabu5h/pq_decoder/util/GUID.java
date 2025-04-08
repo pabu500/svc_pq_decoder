@@ -1,6 +1,10 @@
 package com.pabu5h.pq_decoder.util;
 
 import java.io.IOException;
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
+import java.lang.invoke.MethodHandles.Lookup;
+import java.util.Optional;
 import java.util.UUID;
 
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -91,6 +95,10 @@ public final class GUID {
 	}
 
 	private static String inverse(String name) {
+		
+		if ("67f6af90-f753-0x11cf-9d89-0080c72e70a3".equals(name)) {
+			System.out.println();
+		}
 		if (name.length() != 36) {
 			assert name != null && name.length() == 36 : "name must be 36 char in length";
 		}
@@ -107,6 +115,8 @@ public final class GUID {
 		rs.append(name.substring(14, 16));
 		rs.append('-');
 		rs.append(name.substring(19));
+		
+
 		return rs.toString();
 	}
 
@@ -131,4 +141,9 @@ public final class GUID {
 	        }
 		}
 	}
+
+//	@Override
+//	public Object resolveConstantDesc(Lookup lookup) throws ReflectiveOperationException {
+//		return this;
+//	}
 }

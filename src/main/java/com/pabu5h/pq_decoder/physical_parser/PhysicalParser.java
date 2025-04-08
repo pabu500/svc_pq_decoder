@@ -39,7 +39,17 @@ public class PhysicalParser {
         logger.info("PhysicalParser created with file path: " + filePath);
         this.filePath = filePath;
     }
-    public CompletableFuture<Void> openAsync() {
+    
+    public String getFilePath() {
+		return filePath;
+	}
+
+	public void setFilePath(String filePath) {
+		this.filePath = filePath;
+	}
+
+
+	public CompletableFuture<Void> openAsync() {
         if (filePath == null || filePath.isEmpty()) {
             throw new IllegalStateException("Unable to open PQDIF file when no file name has been defined.");
         }

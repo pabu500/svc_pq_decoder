@@ -1,9 +1,10 @@
 package com.pabu5h.pq_decoder.controller;
 
-import com.pabu5h.pq_decoder.logical_parser.LogicalParser;
-import com.pabu5h.pq_decoder.logical_parser.ObservationRecord;
+//import com.pabu5h.pq_decoder.PqdModule;
+import com.pabu5h.pq_decoder.PqdModule;
+import com.pabu5h.pq_decoder.logical_parser.*;
 import com.pabu5h.pq_decoder.util.ExcelUtil;
-import com.pabu5h.pq_decoder.logical_parser.ContainerRecord;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pabu5h.pq_decoder.physical_parser.EndOfStreamException;
 import com.pabu5h.pq_decoder.physical_parser.PhysicalParser;
 import com.pabu5h.pq_decoder.physical_parser.Record;
@@ -24,11 +25,20 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 @Slf4j
@@ -47,6 +57,8 @@ public class PQDController {
     private PhysicalParserProcessor physicalParserProcessor;
     @Autowired
     private ExcelUtil excelUtil;
+    @Autowired
+    private PqdModule pqdModule;
 
 
 
@@ -54,7 +66,7 @@ public class PQDController {
     public ResponseEntity<Object> parsePQDFile(@RequestParam("pqd_file") MultipartFile pqdFile,
                                                            @RequestParam("operation") String operation,
                                                            @RequestParam(value = "sample_step", required = false, defaultValue = "1") String samplingStep,
-                                                           @RequestParam(value = "filename", required = false, defaultValue = "data1") String filename) throws IOException {
+                                                           @RequestParam(value = "filename", required = false, defaultValue = "data1") String filename) throws Exception {
         int step;
         Map<String,Object> errorMap = new HashMap<>();
         try{
@@ -67,30 +79,42 @@ public class PQDController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("success",false,"error", "PQD file is empty"));
         }
 
-        String url = pqdExePath;
+        //------------------------ c#----------------------
+//
+//        String url = pqdExePath;
+//        String filePath = "C:/Users/yaoyj/Desktop/code/references/svc/svc_pq_decoder/src/main/resources/TAMPINES NT 22kV DE_20230208001841.pqd";
+//
+//
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+//        // Step 1: Get InputStream from MultipartFile
+//        InputStream inputStream = pqdFile.getInputStream();
+//
+//        // Step 2: Convert InputStream to byte array (if needed)
+//        byte[] fileBytes = inputStream.readAllBytes();
+//
+//        // Step 3: Create a ByteArrayResource for multiple reads
+//        ByteArrayResource byteArrayResource = new ByteArrayResource(fileBytes) {
+//            @Override
+//            public String getFilename() {
+//                return pqdFile.getOriginalFilename();  // Optional: Preserve the original file name
+//            }
+//        };
+//        inputStream.close();
+//
+//        MultiValueMap<String, Object> request = new LinkedMultiValueMap<>();
+//        request.add("file", byteArrayResource);  // Add file to request
+//        request.add("step", step);
+//        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(request, headers);
+//        ResponseEntity<Map<String, Object>> resp = restTemplate.exchange(url, HttpMethod.POST, requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {});
+//
+//        Map<String, Object> result = resp.getBody();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-        // Step 1: Get InputStream from MultipartFile
-        InputStream inputStream = pqdFile.getInputStream();
+        //-------------------------------
 
-        // Step 2: Convert InputStream to byte array (if needed)
-        byte[] fileBytes = inputStream.readAllBytes();
+        String filepath = saveTempFile(pqdFile);
 
-        // Step 3: Create a ByteArrayResource for multiple reads
-        ByteArrayResource byteArrayResource = new ByteArrayResource(fileBytes) {
-            @Override
-            public String getFilename() {
-                return pqdFile.getOriginalFilename();  // Optional: Preserve the original file name
-            }
-        };
-
-        MultiValueMap<String, Object> request = new LinkedMultiValueMap<>();
-        request.add("file", byteArrayResource);  // Add file to request
-        request.add("step", step);
-        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(request, headers);
-        ResponseEntity<Map<String, Object>> resp = restTemplate.exchange(url, HttpMethod.POST, requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {});
-        Map<String, Object> result = resp.getBody();
+        Map<String,Object> result = pqdModule.extractLogicalData(filepath,samplingStep);
         if(result == null){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("success", false, "error", "Failed to process PQD file"));
         }
@@ -100,10 +124,8 @@ public class PQDController {
 
         Map<String,Object> data = (Map<String, Object>) result.get("data");
         Map<String,Object> pqdData = (Map<String, Object>) data.get("pqd_data");
-//        Map<String,Object> logicalData = (Map<String, Object>) pqdData.get("logical_parser");
         ArrayList<Map<String,Object>>  logicalData = (ArrayList<Map<String, Object>>) pqdData.get("logical_parser");
         ArrayList<Map<String,Object>>  physicalData = (ArrayList<Map<String, Object>>) pqdData.get("physical_parser");
-//        Map<String,Object> physicalData = (Map<String, Object>) pqdData.get("physical_parser");
         if(physicalData == null){
             errorMap.put("physical_parser_error", "Failed to parse physical data");
         }
@@ -111,7 +133,7 @@ public class PQDController {
             errorMap.put("logical_parser_error", "Failed to parse logical data");
         }
         assert logicalData != null;
-        Map<String,Object> logicalDataMap = logicalData.getFirst();
+        Map<String,Object> logicalDataMap = logicalData.isEmpty() ? null : (Map<String, Object>) logicalData.get(0);
         if(!Objects.equals(operation, "plotGraph")) {
                 Map<String,Object> mapResp = excelUtil.convertToZipFile(operation, filename, data, logicalDataMap,"pqd");
                 byte[] zipBytes = (byte[]) mapResp.get("result");
@@ -130,64 +152,122 @@ public class PQDController {
         response.put("success", true);
         response.put("error", errorMap);
         response.put("data", data);
+//        deleteTempFile(filepath1);
         return ResponseEntity.ok().body(
                 response
         );
     }
 
-    @GetMapping("/process_physical_parser")
-    public ResponseEntity<Map<String,Object>> physicalParser() throws IOException, EndOfStreamException, ExecutionException, InterruptedException {
-        PhysicalParser physicalParser = new PhysicalParser(filePath);
+    // Method to save the file temporarily
+    public String saveTempFile(MultipartFile multipartFile) throws IOException {
 
-        physicalParser.openAsync().get(); // This will block until the file is opened
-        // Initial check
-        int count = 0;
-        List<Record> recordsList = new ArrayList<>();
-        while (physicalParser.hasNextRecord) {
-        	if (count == 0) {
-        		log.info("Reading first record...");
-        	} else {
-        		// Get next record position
-                long nextPosition = physicalParser.currentStreamPosition;
-                log.info("Reading next record at position: " + nextPosition);
-        	}
-
-
-            // Read subsequent records
-			Record record = physicalParser.getNextRecord();
-			ContainerRecord containerRecord = ContainerRecord.createContainerRecord(record);
-			if (containerRecord != null) {
-				physicalParser.compressionAlgorithm = containerRecord.getCompressionAlgorithm();
-				physicalParser.compressionStyle = containerRecord.getCompressionStyle();
-			}
-
-			log.info("Record " + (count++) + ": --> " + record);
-			recordsList.add(record);
+        Path uploadPath = Paths.get("uploads/");
+        // Check if there are any files in the directory
+        try (Stream<Path> files = Files.list(uploadPath)) {
+            if (files.findAny().isPresent()) { // If there are files in the directory
+                // Delete all files in the directory
+                Files.walk(uploadPath)
+                        .filter(Files::isRegularFile) // Only delete regular files
+                        .forEach(path -> {
+                            try {
+                                Files.delete(path); // Delete each file
+                            } catch (IOException e) {
+                                throw new RuntimeException("Failed to delete file: " + path, e);
+                            }
+                        });
+            }
         }
-
-        return ResponseEntity.ok().body(Map.of("success", true, "data", recordsList));
-    }
-
-    @GetMapping("/process_logical_parser")
-    public ResponseEntity<Map<String, Object>> logicalParser() throws IOException, EndOfStreamException, ExecutionException, InterruptedException {
-        Map<String, Object> logicalData = new HashMap<>();
-
-        // Ensure the file is opened and the records are processed
-        LogicalParser logicalParser = new LogicalParser(filePath);
-        logicalParser.openAsync().get();  // Wait until the file is opened
-
-        List<ObservationRecord> recordsList = new ArrayList<>();
-
-        // Use while loop to iterate through records and check the boolean flag directly
-        while (logicalParser.hasNextObservationRecordAsync()) {  // Directly check the boolean result
-            // Await the next record asynchronously and wait for the result (use .get() on the CompletableFuture)
-            ObservationRecord record = logicalParser.nextObservationRecordAsync().get();  // This retrieves the actual record
-            recordsList.add(record);
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
         }
 
 
-        logicalData.put("logical_parser", recordsList);  // Store the list of records
-        return ResponseEntity.ok().body(Map.of("success", true, "data", logicalData));
+
+        // Generate a unique filename if needed
+        String filename = multipartFile.getOriginalFilename();
+        Path filePath = uploadPath.resolve(filename);
+
+        // Save the file
+        Files.copy(multipartFile.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+        return filePath.toString();
     }
+
+    public void deleteTempFile(File file) {
+        if (file.exists()) {
+            int retryCount = 0;
+            boolean deleted = false;
+            while (retryCount < 3 && !deleted) {
+                deleted = file.delete();
+                if (!deleted) {
+                    try {
+                        Thread.sleep(500);  // Retry after a delay
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+                retryCount++;
+            }
+            if (deleted) {
+                System.out.println("Temporary file deleted: " + file.getAbsolutePath());
+            } else {
+                System.err.println("Failed to delete temporary file after retries.");
+            }
+        }
+    }
+
+//    @GetMapping("/process_physical_parser")
+//    public ResponseEntity<Map<String,Object>> physicalParser() throws IOException, EndOfStreamException, ExecutionException, InterruptedException {
+//        PhysicalParser physicalParser = new PhysicalParser(filePath);
+//
+//        physicalParser.openAsync().get(); // This will block until the file is opened
+//        // Initial check
+//        int count = 0;
+//        List<Record> recordsList = new ArrayList<>();
+//        while (physicalParser.hasNextRecord) {
+//        	if (count == 0) {
+//        		log.info("Reading first record...");
+//        	} else {
+//        		// Get next record position
+//                long nextPosition = physicalParser.currentStreamPosition;
+//                log.info("Reading next record at position: " + nextPosition);
+//        	}
+//            // Read subsequent records
+//			Record record = physicalParser.getNextRecord();
+//			ContainerRecord containerRecord = ContainerRecord.createContainerRecord(record);
+//			if (containerRecord != null) {
+//				physicalParser.compressionAlgorithm = containerRecord.getCompressionAlgorithm();
+//				physicalParser.compressionStyle = containerRecord.getCompressionStyle();
+//			}
+//
+//			log.info("Record " + (count++) + ": --> " + record);
+//			recordsList.add(record);
+//        }
+//
+//        return ResponseEntity.ok().body(Map.of("success", true, "data", recordsList));
+//    }
+//
+//    @GetMapping("/process_logical_parser")
+//    public ResponseEntity<Map<String,Object>> logicalParser() throws IOException, EndOfStreamException, ExecutionException, InterruptedException {
+//        Map<String, Object> logicalData = new LinkedHashMap<>();
+//        try {
+//            String filePath = "C:\\Users\\yaoyj\\Desktop\\pq_decoder_henry\\svc_pq_decoder_4_april\\src\\main\\resources\\TAMPINES NT 22kV DE_20230208001841.pqd";
+//            LogicalParser logicalParser = new LogicalParser(filePath);
+//            logicalParser.open();
+//
+//            List<ObservationRecord> recordsList = new ArrayList<>();
+//
+//            while (logicalParser.hasNextObservationRecord()) {
+//                ObservationRecord record = logicalParser.nextObservationRecord();
+//                System.out.println(new ObjectMapper().writeValueAsString(record));
+//                recordsList.add(record);
+//            }
+//
+//            logicalData.put("logical_parser", recordsList);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//        return ResponseEntity.ok().body(Map.of("success", true, "data", logicalData));
+//    }
 
 }

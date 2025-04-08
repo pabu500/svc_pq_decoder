@@ -15,20 +15,6 @@ public class HealthCheckController {
     @Value("${service.version}")
     private String version;
 
-//    @Value("${auth.path}")
-//    private String authPath;
-//    @Value("${oqg.path}")
-//    private String oqgPath;
-//    @Value("${m3.path}")
-//    private String m3Path;
-//    @Value("${tcm.path}")
-//    private String tcmPath;
-//    @Value("${owl.path}")
-//    private String owlPath;
-
-//    @Autowired
-//    private RestTemplate restTemplate;
-
     @GetMapping("/hello")
     public ResponseEntity<String> hello(/*HttpServletResponse httpServletResponse*/) {
         return ResponseEntity.ok()./*headers(headers).*/body("COMTRADE:" + version);
