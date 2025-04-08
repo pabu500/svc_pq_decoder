@@ -354,11 +354,11 @@ public class ComtradeModule {
             final int index = i; // Create a final variable to use in the lambda expression
             List<Double> values = data.stream()
                     .map(row -> row.get(index))
-                    .toList();
+                    .collect(Collectors.toList());
             if (comtradeConfig.getAnalogChannels().size() > i) {
                 double multiplier = Double.parseDouble((String) comtradeConfig.getAnalogChannels().get(i).get("multiplier"));
                 double offSet = Double.parseDouble((String) comtradeConfig.getAnalogChannels().get(i).get("offset"));
-                List<Double> adjustedValues = values.stream().map(value -> value * multiplier + offSet).toList();
+                List<Double> adjustedValues = values.stream().map(value -> value * multiplier + offSet).collect(Collectors.toList());
                 comtradeConfig.getAnalogChannels().get(index).put("values", adjustedValues);
             } else {
                 logger.warning("Index out of bounds for analog channels: " + i);
@@ -366,7 +366,7 @@ public class ComtradeModule {
             }
         }
 
-        data = data.stream().map(row -> row.subList(nAnalogChannels, row.size())).toList();
+        data = data.stream().map(row -> row.subList(nAnalogChannels, row.size())).collect(Collectors.toList());;
 
         int nDigitalChannels = comtradeConfig.getNumOfDigitalChannels();
         for (int i = 0; i < nDigitalChannels; i++) { // Corrected here

@@ -61,6 +61,11 @@ public class CollectionElement extends Element {
         this.elements = new ArrayList<>();
     }
 
+    public CollectionElement(GUID tagOfElement) {
+        this();
+        this.setTagOfElement(tagOfElement);
+    }
+    
     // Add an element to the collection
     public void addElement(Element element) {
         elements.add(element);
