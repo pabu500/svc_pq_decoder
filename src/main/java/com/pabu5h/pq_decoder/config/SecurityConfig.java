@@ -40,7 +40,7 @@ public class SecurityConfig implements WebMvcConfigurer {
         registry.addMapping("/**")
                 .allowedOriginPatterns("*") // This is preferred in Spring Boot 3+
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*")
-                .allowCredentials(true); // Needed if frontend sends cookies or authorization headers
+                .allowedHeaders("*");
+
     }
 }
