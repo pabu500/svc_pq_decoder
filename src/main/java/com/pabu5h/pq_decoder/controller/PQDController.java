@@ -135,6 +135,9 @@ public class PQDController {
     public String saveTempFile(MultipartFile multipartFile) throws IOException {
 
         Path uploadPath = Paths.get("uploads/");
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
         // Check if there are any files in the directory
         try (Stream<Path> files = Files.list(uploadPath)) {
             if (files.findAny().isPresent()) { // If there are files in the directory
@@ -150,9 +153,7 @@ public class PQDController {
                         });
             }
         }
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
-        }
+
         // Generate a unique filename if needed
         String filename = multipartFile.getOriginalFilename();
         Path filePath = uploadPath.resolve(filename);
