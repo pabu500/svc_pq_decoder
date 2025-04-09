@@ -1,47 +1,25 @@
 package com.pabu5h.pq_decoder.controller;
 
-//import com.pabu5h.pq_decoder.PqdModule;
 import com.pabu5h.pq_decoder.PqdModule;
-import com.pabu5h.pq_decoder.logical_parser.*;
 import com.pabu5h.pq_decoder.util.ExcelUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.pabu5h.pq_decoder.physical_parser.EndOfStreamException;
-import com.pabu5h.pq_decoder.physical_parser.PhysicalParser;
-import com.pabu5h.pq_decoder.physical_parser.Record;
-import com.pabu5h.pq_decoder.processor.PhysicalParserProcessor;
-
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.text.SimpleDateFormat;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-
-@Slf4j
 @RestController
 public class PQDController {
     Logger logger = Logger.getLogger(PQDController.class.getName());
@@ -54,13 +32,9 @@ public class PQDController {
     @Autowired
     private RestTemplate restTemplate;
     @Autowired
-    private PhysicalParserProcessor physicalParserProcessor;
-    @Autowired
     private ExcelUtil excelUtil;
     @Autowired
     private PqdModule pqdModule;
-
-
 
     @PostMapping("/process_pqd_file")
     public ResponseEntity<Object> parsePQDFile(@RequestParam("pqd_file") MultipartFile pqdFile,
@@ -152,7 +126,6 @@ public class PQDController {
         response.put("success", true);
         response.put("error", errorMap);
         response.put("data", data);
-//        deleteTempFile(filepath1);
         return ResponseEntity.ok().body(
                 response
         );
@@ -180,9 +153,6 @@ public class PQDController {
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
         }
-
-
-
         // Generate a unique filename if needed
         String filename = multipartFile.getOriginalFilename();
         Path filePath = uploadPath.resolve(filename);
@@ -193,28 +163,6 @@ public class PQDController {
         return filePath.toString();
     }
 
-    public void deleteTempFile(File file) {
-        if (file.exists()) {
-            int retryCount = 0;
-            boolean deleted = false;
-            while (retryCount < 3 && !deleted) {
-                deleted = file.delete();
-                if (!deleted) {
-                    try {
-                        Thread.sleep(500);  // Retry after a delay
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                }
-                retryCount++;
-            }
-            if (deleted) {
-                System.out.println("Temporary file deleted: " + file.getAbsolutePath());
-            } else {
-                System.err.println("Failed to delete temporary file after retries.");
-            }
-        }
-    }
 
 //    @GetMapping("/process_physical_parser")
 //    public ResponseEntity<Map<String,Object>> physicalParser() throws IOException, EndOfStreamException, ExecutionException, InterruptedException {
