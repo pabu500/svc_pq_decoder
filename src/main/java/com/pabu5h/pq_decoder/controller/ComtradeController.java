@@ -23,7 +23,7 @@ public class ComtradeController {
     @Autowired
     private ExcelUtil excelUtil;
 
-    @PostMapping("process_comtrade_file")
+    @PostMapping("/process_comtrade_file")
     public ResponseEntity<Object> processPqd(@RequestParam("cfg_file") MultipartFile cfgFile,
                                                          @RequestParam("dat_file") MultipartFile datFile,
                                                          @RequestParam("operation") String operation,
