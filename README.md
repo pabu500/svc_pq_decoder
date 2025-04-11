@@ -37,3 +37,8 @@ PQ Decoder is a tool developed to decode PQD(Power Quality Data) and COMTRADE (C
 ## Endpoints
 - /process_pqd_file
 - /process_comtrade_file
+
+## References
+- pqdif
+  - https://github.com/gemstone/pqdif
+
