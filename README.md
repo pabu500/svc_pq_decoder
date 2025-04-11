@@ -1,28 +1,27 @@
 ﻿## svc_pq_decoder
-PQ Decoder is a tool developed to decode COMTRADE (Common Format for Transient Data Exchange) files. It reads in .cfg (configuration) and .dat (data) files, enabling users to extract, process, and analyze Power Quality (PQ) data.
-The primary goal of this project is to convert COMTRADE files into more user-friendly formats, such as CSV or JSON, making it easier for users to inspect and analyze the data using familiar tools.
+PQ Decoder is a tool developed to decode PQD(Power Quality Data) and COMTRADE (Common Format for Transient Data Exchange) files for both event-based and trend-based data. 
 
 ## Features
+- Parse PQD files (.pqd)
 - Parse COMTRADE files (.cfg and .dat)
+- Extract waveform Data (Events)
 - Extract both analog and digital signal data.
 - Handle various formats including binary and ASCII
+- CSV and JSON download
 
-## Outputs
-- Provide the data required for plotting the graph
-- csv zip output
-- json zip output
-  
-### Required params
-- cfg multipart
-- dat multipart
-- operation
+### Params
+- multipart files  (required)
+  - .cfg file (for comtrade)
+  - .dat file (for comtrade)
+  - .pqd file (for pqd)
+- operation (required)
   - plotGraph
   - downloadCsvZip
   - downloadJsonZip
 - sample_step (optional)
 - filename(optional)
 
-## installation guide
+## Installation guide
 - download intellij
   - Download and install IntelliJ IDEA for your development environment.
 - pull the latest pq_decoder
@@ -34,3 +33,7 @@ The primary goal of this project is to convert COMTRADE files into more user-fri
 - API Endpoint
   - Endpoint: /process_pqd
   - Ensure the UI is configured to send the files to this endpoint.
+
+## Endpoints
+- /process_pqd_file
+- /process_comtrade_file
