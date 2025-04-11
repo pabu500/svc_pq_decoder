@@ -28,11 +28,9 @@ PQ Decoder is a tool developed to decode PQD(Power Quality Data) and COMTRADE (C
   - git clone https://github.com/pabu500/pq_decoder.git repo
 - run the backend
   - open the intellij and run the backend to start service
-- run the frontend
-  - have some UI to upload the cfg and dat file byte data to the pq_decoder backend
-- API Endpoint
-  - Endpoint: /process_pqd
-  - Ensure the UI is configured to send the files to this endpoint.
+- invoke the endpoint
+  - option 1 - Postman
+  - option 2 - Frontend
 
 ## Endpoints
 - /process_pqd_file
