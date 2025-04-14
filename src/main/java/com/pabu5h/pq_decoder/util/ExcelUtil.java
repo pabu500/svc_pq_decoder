@@ -23,19 +23,23 @@ import java.util.zip.ZipOutputStream;
 @Component
 public class ExcelUtil {
     Logger logger = Logger.getLogger(ExcelUtil.class.getName());
-    public Map<String, Object> createExcelWithMultipleSheets(Map<String, Object> channelMap,String type,List<String> headers) throws IOException {
+    public Map<String, Object> createExcelWithMultipleSheets(Map<String, Object> channelMap,String type) throws IOException {
         // Create an Excel workbook
         XSSFWorkbook workbook = new XSSFWorkbook();
 
         // Write the general info to the first sheet
-        writeGeneralInfoSheet(workbook, channelMap,headers);
+
+        List<String> ExcelHeaders;
 
         List<Map<String, Object>> channels = new ArrayList<>();
         if("comtrade".equals(type)){
             channels = (List<Map<String, Object>>) channelMap.get("analogChannels");
+            ExcelHeaders = List.of("stationName", "deviceId", "numOfChannels","lineFrequency","startTimestamp","endTimestamp","samplingRate","numOfSamples");
         }else{
             channels = (List<Map<String, Object>>) channelMap.get("channel_info");
+            ExcelHeaders = List.of("file_name", "channel_count", "timestamp","sampling_rate");
         }
+        writeGeneralInfoSheet(workbook, channelMap,ExcelHeaders);
         for (int i = 0; i < channels.size(); i++) {
             Map<String, Object> channel = channels.get(i);
             writeChannelInfoSheet(workbook, channel, i + 1);  // Creating sheets from index 1 onwards for channels
@@ -50,72 +54,83 @@ public class ExcelUtil {
         return Map.of("result", outputStream.toByteArray());
     }
 
-    private void writeGeneralInfoSheet(XSSFWorkbook workbook, Map<String, Object> channelInfo,List<String> headers) {
+    private void writeGeneralInfoSheet(XSSFWorkbook workbook, Map<String, Object> channelInfo, List<String> headers) {
         // Create the first sheet for general info
         Sheet sheet = workbook.createSheet("General Info");
 
-
-        // Write headers (first row)
-        int headerCellIndex = 0;
-
-        int rowIndex = 0; // Start from the first row
-
-        // Get an iterator for the generalInfo values
-        Iterator<Object> valueIterator = channelInfo.values().iterator();
+        int rowIndex = 0;
 
         for (String header : headers) {
-            Row currentRow = sheet.createRow(rowIndex++); // Create a new row for each header
+            Row currentRow = sheet.createRow(rowIndex++);
 
-            // Create and set the header cell in the first column
-            Cell headerCell = currentRow.createCell(0); // Column 0 for header
+            // Column 0: Header
+            Cell headerCell = currentRow.createCell(0);
             headerCell.setCellValue(header);
 
-            // Check if there are more values to set
-            if (valueIterator.hasNext()) {
-                // Get the next value from generalInfo
-                Object value = valueIterator.next();
-                Cell valueCell = currentRow.createCell(1); // Column 1 for value
-                String cellValue = value != null ? value.toString() : "";
+            // Column 1: Corresponding value from the map
+            Object value = channelInfo.get(header);
+            String cellValue = value != null ? value.toString() : "";
 
-                // Check the length of the value and truncate if necessary
-                if (cellValue.length() > 32767) {
-                    cellValue = cellValue.substring(0, 32767) + "... (truncated)";
-                }
-
-                valueCell.setCellValue(cellValue); // Set the value cell
-            } else {
-                // If no more values, set the second cell to empty
-                currentRow.createCell(1).setCellValue(""); // Set empty if no corresponding value
+            // Truncate if needed
+            if (cellValue.length() > 32767) {
+                cellValue = cellValue.substring(0, 32740);
             }
+
+            Cell valueCell = currentRow.createCell(1);
+            valueCell.setCellValue(cellValue);
         }
-        for (int i = 0; i < 2; i++) {
-            sheet.setColumnWidth(i, 6000); // Set each column width to 20 characters
-        }
+
+        // Set consistent column width
+        sheet.setColumnWidth(0, 6000); // Header column
+        sheet.setColumnWidth(1, 10000); // Value column
     }
 
-
     private void writeChannelInfoSheet(XSSFWorkbook workbook, Map<String, Object> channel, int sheetIndex) {
-        // Create a new sheet for each analog channel
-        String channelName = channel.get("channel_name") != null ? channel.get("channel_name").toString() : "Channel " + sheetIndex;
+        String channelName = channel.get("channel_name") != null ? (String)channel.get("channel_name") : "Channel" + sheetIndex;
+
+        // Remove illegal characters
+        channelName = channelName.replaceAll("[\\p{Cntrl}&&[^\r\n\t]]", "");
+
+        if (channelName.isEmpty()) {
+            channelName = "Channel";
+        }
+        // Truncate to ensure total length ≤ 31
+        int maxBaseLength = 31;
+        if (channelName.length() > maxBaseLength) {
+            channelName = channelName.substring(0, maxBaseLength);
+        }
+
+        // Ensure uniqueness
+        int duplicateCount = 1;
+        String originalName = channelName;
+        while (workbook.getSheet(channelName) != null) {
+            channelName = originalName + "_" + duplicateCount++;
+            if (channelName.length() > 31) {
+                channelName = channelName.substring(0, 31); // Just in case
+            }
+        }
+
         Sheet sheet = workbook.createSheet(channelName);
         XSSFFont boldFont = workbook.createFont();
         boldFont.setBold(true);
 
-        // Create a cell style with the bold font
         CellStyle boldStyle = workbook.createCellStyle();
         boldStyle.setFont(boldFont);
-        // Write channel-specific headers and properties (first row)
+
+       //  Header row
         Row headerRow = sheet.createRow(0);
         Cell headerCell0 = headerRow.createCell(0);
         headerCell0.setCellValue("Property");
-        headerCell0.setCellStyle(boldStyle); // Set the bold style
+        headerCell0.setCellStyle(boldStyle);
 
         Cell headerCell1 = headerRow.createCell(1);
         headerCell1.setCellValue("Value");
-        headerCell1.setCellStyle(boldStyle); // Set the bold style
-        sheet.setColumnWidth(0, 20 * 256); // Set width for 'Property' column
-        sheet.setColumnWidth(1, 30 * 256); // Set width for 'Value' column
-        // Write channel properties in the next rows
+        headerCell1.setCellStyle(boldStyle);
+
+        sheet.setColumnWidth(0, 20 * 256);
+        sheet.setColumnWidth(1, 30 * 256);
+
+        // Start writing data
         int rowIndex = 1;
         for (Map.Entry<String, Object> entry : channel.entrySet()) {
             if ("values".equals(entry.getKey())) {
@@ -127,9 +142,10 @@ public class ExcelUtil {
             String propertyValue = entry.getValue() != null ? entry.getValue().toString() : "";
 
             // Check the length of the property value and truncate if necessary
-            if (propertyValue.length() > 32767) {
-                propertyValue = propertyValue.substring(0, 32767) + "... (truncated)";
+            if (propertyValue.length() > 32740) {
+                // Ensure the final string INCLUDING "... (truncated)" is max 32767 chars
 
+                propertyValue = propertyValue.substring(0, 32740);
             }
 
             row.createCell(0).setCellValue(propertyName);
@@ -140,15 +156,17 @@ public class ExcelUtil {
         List<Number> values = (List<Number>) channel.get("values");
         Row valuesHeaderRow = sheet.createRow(rowIndex++);
         valuesHeaderRow.createCell(0).setCellValue("Values");
-
-        // Write each value in its own row
+        if (values.size() > 1_000_000) {
+            values = values.subList(0, 1_000_000); // Limit to Excel max
+        }
+//         Write each value in its own row
         for (Number value : values) {
             Row valueRow = sheet.createRow(rowIndex++);
             String valueString = String.valueOf(value != null ? value : "");
 
             // Check the length of the value and truncate if necessary
-            if (valueString.length() > 32767) {
-                valueString = valueString.substring(0, 32767) + "... (truncated)";
+            if (valueString.length() > 32740) {
+                valueString = valueString.substring(0, 32740);
 
             }
 
@@ -171,8 +189,8 @@ public class ExcelUtil {
                 zipOut.write(jsonContent.getBytes(StandardCharsets.UTF_8));
             } else {
                 extension = ".xlsx";
-                List<String> ExcelHeaders = List.of("file name", "timestamp");
-                Map<String, Object> xlsxResult = createExcelWithMultipleSheets(logicalData, type, ExcelHeaders);
+
+                Map<String, Object> xlsxResult = createExcelWithMultipleSheets(logicalData, type);
                 byte[] xlsxBytes = (byte[]) xlsxResult.get("result");
                 fileName = filename + extension;
                 ZipEntry zipEntry = new ZipEntry(fileName);
