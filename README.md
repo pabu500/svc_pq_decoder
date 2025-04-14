@@ -21,7 +21,7 @@ PQ Decoder is a specialized software tool for parsing and analyzing Power Qualit
 - sample_step (optional)
 - filename(optional)
 
-## prerequisite
+## Prerequisite
 - Java development environment
   - Install any Java-supported IDE (e.g., IntelliJ IDEA, VS Code with Java extensions).
   - java version 20++
