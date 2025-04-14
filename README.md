@@ -1,5 +1,5 @@
 ﻿## svc_pq_decoder
-PQ Decoder is a tool developed to decode PQD(Power Quality Data) and COMTRADE (Common Format for Transient Data Exchange) files for both event-based and trend-based data. 
+PQ Decoder is a specialized software tool for parsing and analyzing Power Quality Data (PQD) and COMTRADE files. It supports both event-based (transients, dips, swells) and trend-based (long-term harmonics, voltage fluctuations) data decoding, enabling detailed power system diagnostics.
 
 ## Features
 - Parse PQD files (.pqd)
