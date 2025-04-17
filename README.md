@@ -1,5 +1,5 @@
 ﻿## svc_pq_decoder
-PQ Decoder is a specialized software tool for parsing and analyzing Power Quality Data (PQD) and COMTRADE files. It supports both event-based (transients, dips, swells) and trend-based (long-term harmonics, voltage fluctuations) data decoding, enabling detailed power system diagnostics.This project draws inspiration and references from two key sources: gemstone/pqdif (a C# library for PQD parsing) https://github.com/gemstone/pqdif and miguelmoreto/pycomtrade (a Python COMTRADE parser) https://github.com/miguelmoreto/pycomtrade/ . Special credits to the creators of these repositories.
+PQ Decoder is a specialized software tool for parsing and analyzing Power Quality Data (PQD) and COMTRADE files. It supports both event-based (transients, dips, swells) and trend-based (long-term harmonics, voltage fluctuations) data decoding, enabling detailed power system diagnostics.This project draws inspiration and references from two key sources: gemstone/pqdif (a C# library for PQD parsing) https://github.com/gemstone/pqdif and miguelmoreto/pycomtrade (a Python COMTRADE parser) https://github.com/miguelmoreto/pycomtrade . Special credits to the creators of these repositories.
 
 ![PQ Decoder Diagram](image/diagram.png)
 
