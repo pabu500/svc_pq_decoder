@@ -29,5 +29,5 @@ PQ Decoder is a specialized software tool for parsing and analyzing Power Qualit
 - pqdif
   - https://github.com/gemstone/pqdif
 - comtrade
-  - https://github.com/miguelmoreto/pycomtrade/ 
+  - https://github.com/miguelmoreto/pycomtrade
 
