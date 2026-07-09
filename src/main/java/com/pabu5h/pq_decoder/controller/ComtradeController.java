@@ -25,10 +25,10 @@ public class ComtradeController {
 
     @PostMapping("/process_comtrade_file")
     public ResponseEntity<Object> processPqd(@RequestParam("cfg_file") MultipartFile cfgFile,
-                                                         @RequestParam("dat_file") MultipartFile datFile,
-                                                         @RequestParam("operation") String operation,
-                                                         @RequestParam(value = "sample_step", required = false, defaultValue = "1") String samplingStep,
-                                                         @RequestParam(value = "filename", required = false, defaultValue = "data1") String filename) throws IOException {
+                                             @RequestParam("dat_file") MultipartFile datFile,
+                                             @RequestParam("operation") String operation,
+                                             @RequestParam(value = "sample_step", required = false, defaultValue = "1") String samplingStep,
+                                             @RequestParam(value = "filename", required = false, defaultValue = "cfg_result") String filename) throws IOException {
         int step;
         try{
             step = Integer.parseInt(samplingStep);

@@ -40,7 +40,7 @@ public class PQDController {
     public ResponseEntity<Object> parsePQDFile(@RequestParam("pqd_file") MultipartFile pqdFile,
                                                @RequestParam("response_type") String responseType,
                                                @RequestParam(value = "sample_step", required = false, defaultValue = "1") String samplingStep,
-                                               @RequestParam(value = "filename", required = false, defaultValue = "data1") String filename) throws Exception {
+                                               @RequestParam(value = "filename", required = false, defaultValue = "pqd_result") String filename) throws Exception {
         Map<String,Object> errorMap = new HashMap<>();
         try{
             Integer.parseInt(samplingStep);
