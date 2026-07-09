@@ -38,13 +38,12 @@ public class PQDController {
 
     @PostMapping("/process_pqd_file")
     public ResponseEntity<Object> parsePQDFile(@RequestParam("pqd_file") MultipartFile pqdFile,
-                                                           @RequestParam("operation") String operation,
-                                                           @RequestParam(value = "sample_step", required = false, defaultValue = "1") String samplingStep,
-                                                           @RequestParam(value = "filename", required = false, defaultValue = "data1") String filename) throws Exception {
-        int step;
+                                               @RequestParam("response_type") String responseType,
+                                               @RequestParam(value = "sample_step", required = false, defaultValue = "1") String samplingStep,
+                                               @RequestParam(value = "filename", required = false, defaultValue = "data1") String filename) throws Exception {
         Map<String,Object> errorMap = new HashMap<>();
         try{
-            step = Integer.parseInt(samplingStep);
+            Integer.parseInt(samplingStep);
         }catch(Exception e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("success",false,"error", "Invalid sampling step"));
         }
@@ -52,39 +51,6 @@ public class PQDController {
         if(pqdFile.isEmpty()){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("success",false,"error", "PQD file is empty"));
         }
-
-        //------------------------ c#----------------------
-//
-//        String url = pqdExePath;
-//        String filePath = "C:/Users/yaoyj/Desktop/code/references/svc/svc_pq_decoder/src/main/resources/TAMPINES NT 22kV DE_20230208001841.pqd";
-//
-//
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-//        // Step 1: Get InputStream from MultipartFile
-//        InputStream inputStream = pqdFile.getInputStream();
-//
-//        // Step 2: Convert InputStream to byte array (if needed)
-//        byte[] fileBytes = inputStream.readAllBytes();
-//
-//        // Step 3: Create a ByteArrayResource for multiple reads
-//        ByteArrayResource byteArrayResource = new ByteArrayResource(fileBytes) {
-//            @Override
-//            public String getFilename() {
-//                return pqdFile.getOriginalFilename();  // Optional: Preserve the original file name
-//            }
-//        };
-//        inputStream.close();
-//
-//        MultiValueMap<String, Object> request = new LinkedMultiValueMap<>();
-//        request.add("file", byteArrayResource);  // Add file to request
-//        request.add("step", step);
-//        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(request, headers);
-//        ResponseEntity<Map<String, Object>> resp = restTemplate.exchange(url, HttpMethod.POST, requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {});
-//
-//        Map<String, Object> result = resp.getBody();
-
-        //-------------------------------
 
         String filepath = saveTempFile(pqdFile);
 
@@ -108,8 +74,19 @@ public class PQDController {
         }
         assert logicalData != null;
         Map<String,Object> logicalDataMap = logicalData.isEmpty() ? null : (Map<String, Object>) logicalData.get(0);
-        if(!Objects.equals(operation, "plotGraph")) {
-                Map<String,Object> mapResp = excelUtil.convertToZipFile(operation, filename, data, logicalDataMap,"pqd");
+
+        switch (responseType) {
+            case "data":
+                Map<String, Object> response = new LinkedHashMap<>();
+                response.put("success", true);
+                response.put("error", errorMap);
+                response.put("data", data);
+                return ResponseEntity.ok().body(
+                        response
+                );
+            case "xlsx":
+            case "json":
+                Map<String,Object> mapResp = excelUtil.convertToZipFile(responseType, filename, data, logicalDataMap,"pqd");
                 byte[] zipBytes = (byte[]) mapResp.get("result");
                 String uniqueFilename = filename + "_" + System.currentTimeMillis();
                 HttpHeaders respHeaders = new HttpHeaders();
@@ -119,16 +96,9 @@ public class PQDController {
                 respHeaders.add("Content-Type", "application/zip");  // Correct Content-Type for ZIP files
                 respHeaders.add("Content-Length", String.valueOf(zipBytes.length));
                 return ResponseEntity.status(HttpStatus.OK).headers(respHeaders).body(zipBytes);
-//            return ResponseEntity.ok().body(Map.of("success", true, "error", errorMap, "data", logicalDataMap));
+            default:
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("success", false, "error", "Invalid responseType"));
         }
-
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("success", true);
-        response.put("error", errorMap);
-        response.put("data", data);
-        return ResponseEntity.ok().body(
-                response
-        );
     }
 
     // Method to save the file temporarily

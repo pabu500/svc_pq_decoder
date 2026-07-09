@@ -174,28 +174,33 @@ public class ExcelUtil {
         }
     }
 
-    public Map<String,Object> convertToZipFile(String operation,String filename,Map<String,Object> data,Map<String,Object> logicalData,String type) throws IOException {
+    public Map<String,Object> convertToZipFile(String responseType,String filename,Map<String,Object> data,Map<String,Object> logicalData,String type) throws IOException {
         ByteArrayOutputStream zipOutputStream = new ByteArrayOutputStream();
         try (ZipOutputStream zipOut = new ZipOutputStream(zipOutputStream)) {
             String extension;
             String fileName;
-            if ("downloadJsonZip".equals(operation)) {
-                extension = ".json";
+            switch(responseType) {
+                case "json":
+                    extension = ".json";
 
-                String jsonContent = new ObjectMapper().writeValueAsString(data);
-                fileName = filename + extension;
-                ZipEntry zipEntry = new ZipEntry(fileName);
-                zipOut.putNextEntry(zipEntry);
-                zipOut.write(jsonContent.getBytes(StandardCharsets.UTF_8));
-            } else {
-                extension = ".xlsx";
+                    String jsonContent = new ObjectMapper().writeValueAsString(data);
+                    fileName = filename + extension;
+                    ZipEntry zipEntry = new ZipEntry(fileName);
+                    zipOut.putNextEntry(zipEntry);
+                    zipOut.write(jsonContent.getBytes(StandardCharsets.UTF_8));
+                    break;
+                case "xlsx":
+                    extension = ".xlsx";
 
-                Map<String, Object> xlsxResult = createExcelWithMultipleSheets(logicalData, type);
-                byte[] xlsxBytes = (byte[]) xlsxResult.get("result");
-                fileName = filename + extension;
-                ZipEntry zipEntry = new ZipEntry(fileName);
-                zipOut.putNextEntry(zipEntry);
-                zipOut.write(xlsxBytes);
+                    Map<String, Object> xlsxResult = createExcelWithMultipleSheets(logicalData, type);
+                    byte[] xlsxBytes = (byte[]) xlsxResult.get("result");
+                    fileName = filename + extension;
+                    ZipEntry zipEntry2 = new ZipEntry(fileName);
+                    zipOut.putNextEntry(zipEntry2);
+                    zipOut.write(xlsxBytes);
+                    break;
+                default:
+                    return Map.of("error", "Invalid responseType");
             }
 
             zipOut.closeEntry();
@@ -203,7 +208,6 @@ public class ExcelUtil {
 
             byte[] zipBytes = zipOutputStream.toByteArray();  // Ensure conversion to byte array
             return Map.of("result", zipBytes);
-
         } catch (IOException e) {
             logger.severe("Error creating JSON zip file");
             return(Map.of("error", "Failed to create JSON zip file"));
