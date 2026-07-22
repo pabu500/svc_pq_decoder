@@ -266,6 +266,7 @@ public class PhysicalParser {
 
         // Loop through and read each element, up to 'num' elements
         for (int i = 0; i < num; i++) {
+//        	System.out.println("readCollection... " + i + " / " + num + " " + buffer.remaining() + " " + maximumExceptionsReached);
             if (buffer.remaining() == 0 || maximumExceptionsReached) {
                 break;  // Stop if there are no more bytes or max exceptions reached
             }

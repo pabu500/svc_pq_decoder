@@ -221,6 +221,9 @@ public class ScalarElement extends Element {
 	@JsonIgnore
 	public Object get() {
 		// TODO Auto-generated method stub
+		if (typeOfValue == PhysicalType.Real8) {
+			return getReal8();
+		}
 		return m_value;
 	}
 }

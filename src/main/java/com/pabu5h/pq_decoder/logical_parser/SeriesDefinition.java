@@ -43,6 +43,8 @@ public class SeriesDefinition {
         /// </summary>
         //Scaled = (uint)Bits.Bit01,
     	Scaled(2),
+    	
+    	ValuesScaled(3),
 
         /// <summary>
         /// Start, count, and increment are stored and

@@ -34,6 +34,7 @@ public class ChannelInstance {
     
     boolean init = false;
     public void init() {
+//    	System.out.println("ChannelInstance.init... ");
     	if (init == true) {
     		return;
     	}

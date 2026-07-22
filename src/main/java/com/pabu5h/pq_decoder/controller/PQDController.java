@@ -1,24 +1,33 @@
 package com.pabu5h.pq_decoder.controller;
 
-import com.pabu5h.pq_decoder.PqdModule;
-import com.pabu5h.pq_decoder.util.ExcelUtil;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.multipart.MultipartFile;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.pabu5h.pq_decoder.PqdModule;
+import com.pabu5h.pq_decoder.util.ExcelUtil;
+
+import jakarta.annotation.PostConstruct;
 
 @RestController
 public class PQDController {
@@ -41,6 +50,7 @@ public class PQDController {
                                                @RequestParam("response_type") String responseType,
                                                @RequestParam(value = "sample_step", required = false, defaultValue = "1") String samplingStep,
                                                @RequestParam(value = "filename", required = false, defaultValue = "pqd_result") String filename) throws Exception {
+        long startTime = System.currentTimeMillis();
         Map<String,Object> errorMap = new HashMap<>();
         try{
             Integer.parseInt(samplingStep);
@@ -65,10 +75,10 @@ public class PQDController {
         Map<String,Object> data = (Map<String, Object>) result.get("data");
         Map<String,Object> pqdData = (Map<String, Object>) data.get("pqd_data");
         ArrayList<Map<String,Object>>  logicalData = (ArrayList<Map<String, Object>>) pqdData.get("logical_parser");
-        ArrayList<Map<String,Object>>  physicalData = (ArrayList<Map<String, Object>>) pqdData.get("physical_parser");
-        if(physicalData == null){
-            errorMap.put("physical_parser_error", "Failed to parse physical data");
-        }
+//        ArrayList<Map<String,Object>>  physicalData = (ArrayList<Map<String, Object>>) pqdData.get("physical_parser");
+//        if(physicalData == null){
+//            errorMap.put("physical_parser_error", "Failed to parse physical data");
+//        }
         if(logicalData == null){
             errorMap.put("logical_parser_error", "Failed to parse logical data");
         }
@@ -81,6 +91,7 @@ public class PQDController {
                 response.put("success", true);
                 response.put("error", errorMap);
                 response.put("data", data);
+                response.put("processing_time_seconds", (System.currentTimeMillis() - startTime) / 1000.0);
                 return ResponseEntity.ok().body(
                         response
                 );
@@ -95,6 +106,7 @@ public class PQDController {
                 logger.info(filename + ".zip");
                 respHeaders.add("Content-Type", "application/zip");  // Correct Content-Type for ZIP files
                 respHeaders.add("Content-Length", String.valueOf(zipBytes.length));
+                respHeaders.add("X-Processing-Time-Seconds", String.valueOf((System.currentTimeMillis() - startTime) / 1000.0));
                 return ResponseEntity.status(HttpStatus.OK).headers(respHeaders).body(zipBytes);
             default:
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("success", false, "error", "Invalid responseType"));
@@ -189,4 +201,86 @@ public class PQDController {
 //        return ResponseEntity.ok().body(Map.of("success", true, "data", logicalData));
 //    }
 
+
+    @GetMapping("/process_pqd_file_test")
+    public ResponseEntity<Object> parsePQDFileTest(
+                                               @RequestParam(value = "response_type", required = false, defaultValue = "data") String responseType,
+                                               @RequestParam(value = "sample_step", required = false, defaultValue = "1") String samplingStep,
+                                               @RequestParam(value = "filename", required = false, defaultValue = "pqd_result") String filename) throws Exception {
+        long startTime = System.currentTimeMillis();
+        Map<String,Object> errorMap = new HashMap<>();
+        try{
+            Integer.parseInt(samplingStep);
+        }catch(Exception e){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("success",false,"error", "Invalid sampling step"));
+        }
+        
+        //SATEC
+//        String filepath = "D:\\workspace\\ext\\EventsTrends_SATEC\\Trends\\BANYAN DR 22kV CD_26-07-09 15-40.pqd";
+        //String filepath = "D:\\workspace\\ext\\EventsTrends_SATEC\\Events\\CRAWFORD 22kV AB_26-06-16 14-03-19-381.pqd";
+        
+        //DRANETZ
+//        String filepath = "D:\\workspace\\ext\\Sampledata\\event\\temp10.pqd";
+        String filepath = "D:\\workspace\\ext\\Sampledata\\trend\\temp8.pqd";
+
+        Map<String,Object> result = pqdModule.extractLogicalData(filepath,samplingStep);
+        if(result == null){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("success", false, "error", "Failed to process PQD file"));
+        }
+        if(result.get("data") == null){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("success", false, "error", "Failed to process PQD file"));
+        }
+
+        Map<String,Object> data = (Map<String, Object>) result.get("data");
+        Map<String,Object> pqdData = (Map<String, Object>) data.get("pqd_data");
+        ArrayList<Map<String,Object>>  logicalData = (ArrayList<Map<String, Object>>) pqdData.get("logical_parser");
+//        ArrayList<Map<String,Object>>  physicalData = (ArrayList<Map<String, Object>>) pqdData.get("physical_parser");
+//        if(physicalData == null){
+//            errorMap.put("physical_parser_error", "Failed to parse physical data");
+//        }
+        if(logicalData == null){
+            errorMap.put("logical_parser_error", "Failed to parse logical data");
+        }
+        assert logicalData != null;
+        Map<String,Object> logicalDataMap = logicalData.isEmpty() ? null : (Map<String, Object>) logicalData.get(0);
+
+        switch (responseType) {
+            case "data":
+                Map<String, Object> response = new LinkedHashMap<>();
+                response.put("success", true);
+                response.put("error", errorMap);
+                response.put("data", data);
+                response.put("processing_time_seconds", (System.currentTimeMillis() - startTime) / 1000.0);
+                return ResponseEntity.ok().body(
+                        response
+                );
+            case "xlsx":
+            case "json":
+                Map<String,Object> mapResp = excelUtil.convertToZipFile(responseType, filename, data, logicalDataMap,"pqd");
+                byte[] zipBytes = (byte[]) mapResp.get("result");
+                String uniqueFilename = filename + "_" + System.currentTimeMillis();
+                HttpHeaders respHeaders = new HttpHeaders();
+                respHeaders.add("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+                respHeaders.add("Content-Disposition", "attachment; filename=\"" + uniqueFilename + ".zip\"");
+                logger.info(filename + ".zip");
+                respHeaders.add("Content-Type", "application/zip");  // Correct Content-Type for ZIP files
+                respHeaders.add("Content-Length", String.valueOf(zipBytes.length));
+                respHeaders.add("X-Processing-Time-Seconds", String.valueOf((System.currentTimeMillis() - startTime) / 1000.0));
+                return ResponseEntity.status(HttpStatus.OK).headers(respHeaders).body(zipBytes);
+            default:
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("success", false, "error", "Invalid responseType"));
+        }
+    }
+    
+//    @PostConstruct
+    public void test() {
+        try {
+//             Map<String,Object> result = pqdModule.extractLogicalData("D:\\workspace\\ext\\EventsTrends_SATEC\\Trends\\BANYAN DR 22kV CD_26-07-09 15-40.pqd","1");
+//             System.out.println(result);((Map<String,Object>) ((Map<String,Object>) (result.get("data"))).get("pqd_data")).get("logical_parser");
+        } catch (Exception e) {
+
+        	e.printStackTrace();
+        }
+
+    }
 }

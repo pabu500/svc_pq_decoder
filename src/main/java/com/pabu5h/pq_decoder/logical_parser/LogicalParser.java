@@ -167,30 +167,37 @@ public class LogicalParser {
     /// <returns>true if there is another observation record to be read from PQDIF file; false otherwise</returns>
     public boolean hasNextObservationRecord() throws IOException
     {
+    	
+//    	System.out.println("hasNextObservationRecord... ");
         Record physicalRecord;
         RecordType recordType;
 
         // Read records from the file until we encounter an observation record or end of file
         while (m_nextObservationRecord == null && m_physicalParser.hasNextRecord)
         {
+//        	System.out.println("getNextRecord... ");
             physicalRecord = m_physicalParser.getNextRecord();
+//            System.out.println("End getNextRecord... ");
             recordType = physicalRecord.getHeader().getTypeOfRecord();
 
             switch (recordType)
             {
                 case DataSource:
                     // Keep track of the latest data source record in order to associate it with observation records
+//                	System.out.println("CreateDataSourceRecord... ");
                     m_currentDataSourceRecord = DataSourceRecord.CreateDataSourceRecord(physicalRecord);
                     m_allDataSourceRecords.add(m_currentDataSourceRecord);
                     break;
 
                 case MonitorSettings:
                     // Keep track of the latest monitor settings record in order to associate it with observation records
+//                	System.out.println("createMonitorSettingsRecord... ");
                     m_currentMonitorSettingsRecord = MonitorSettingsRecord.createMonitorSettingsRecord(physicalRecord);
                     break;
 
                 case Observation:
                     // Found an observation record!
+//                	System.out.println("createObservationRecord... ");
                     m_nextObservationRecord = ObservationRecord.createObservationRecord(physicalRecord, m_currentDataSourceRecord, m_currentMonitorSettingsRecord);
                     break;
 
@@ -204,6 +211,8 @@ public class LogicalParser {
                     break;
             }
         }
+        
+//        System.out.println("End hasNextObservationRecord ");
 
         return m_nextObservationRecord != null;
     }

@@ -484,8 +484,8 @@ public class SeriesInstance {
         boolean incremented = (storageMethods.value & StorageMethods.Increment.value) != 0;
 
         boolean scaled = (storageMethods.value & StorageMethods.Scaled.value) != 0;
-        Number offset = (getSeriesOffset() != null) ? (int) getSeriesOffset().get() : 0;
-        Number scale = (getSeriesScale() != null) ? (int) getSeriesScale().get() : 1;
+        Number offset = (getSeriesOffset() != null) ? (Number) getSeriesOffset().get() : 0;
+        Number scale = (getSeriesScale() != null) ? (Number) getSeriesScale().get() : 1;
         Number value;
 
         if (!scaled)
@@ -520,8 +520,14 @@ public class SeriesInstance {
         }
         else
         {
-            for (int i = 0; i < valuesVector.getSize(); i++)
-                values.add((Number) valuesVector.get(i));
+            for (int i = 0; i < valuesVector.getSize(); i++) {
+            	try {
+            		values.add((Number) valuesVector.get(i));
+				} catch (Exception e) {
+					throw e;
+				}
+            }
+                
         }
 
         if (valuesVector.getTypeOfValue() != PhysicalType.Timestamp)
@@ -544,6 +550,12 @@ public class SeriesInstance {
         
         return originalValues = values;
     }
+    
+    public List<Number> reCalOriginalValues() {
+    	originalValues = null;
+    	return this.getOriginalValues();
+    }
+    
 
     private void ApplyTransducerRatio(List<Number> values)
     {

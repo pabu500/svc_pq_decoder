@@ -155,8 +155,8 @@ public class VectorElement extends Element {  // Extend Element
 		
 		byte[] tmp = new byte[16];
 		int byteIndex = index * 2;
-		System.arraycopy(m_value, byteIndex, tmp, 0, 16);
-		return ByteBuffer.wrap(tmp).order(ByteOrder.LITTLE_ENDIAN).getInt();
+		System.arraycopy(m_value, byteIndex, tmp, 0, Math.min(tmp.length, Math.max(0, m_value.length - byteIndex)));
+		return ByteBuffer.wrap(tmp).order(ByteOrder.LITTLE_ENDIAN).getShort();
 	}
 	
     /// <summary>
@@ -168,15 +168,15 @@ public class VectorElement extends Element {  // Extend Element
 		
 		byte[] tmp = new byte[16];
 		int byteIndex = index * 2;
-		System.arraycopy(m_value, byteIndex, tmp, 0, 16);
-		return ByteBuffer.wrap(tmp).order(ByteOrder.LITTLE_ENDIAN).getInt();
+		System.arraycopy(m_value, byteIndex, tmp, 0, Math.min(tmp.length, Math.max(0, m_value.length - byteIndex)));
+		return ByteBuffer.wrap(tmp).order(ByteOrder.LITTLE_ENDIAN).getShort() & 0xFFFF;
 	}
 	
 	public int getInt4(int index) {
 		
 		byte[] tmp = new byte[32];
 		int byteIndex = index * 4;
-		System.arraycopy(m_value, byteIndex, tmp, 0, 32);
+		System.arraycopy(m_value, byteIndex, tmp, 0, Math.min(tmp.length, Math.max(0, m_value.length - byteIndex)));
 		return ByteBuffer.wrap(tmp).order(ByteOrder.LITTLE_ENDIAN).getInt();
 	}
 	
@@ -189,7 +189,7 @@ public class VectorElement extends Element {  // Extend Element
 		
 		byte[] tmp = new byte[32];
 		int byteIndex = index * 4;
-		System.arraycopy(m_value, byteIndex, tmp, 0, 32);
+		System.arraycopy(m_value, byteIndex, tmp, 0, Math.min(tmp.length, Math.max(0, m_value.length - byteIndex)));
 		return ByteBuffer.wrap(tmp).order(ByteOrder.LITTLE_ENDIAN).getInt();
 	}
     
@@ -202,9 +202,9 @@ public class VectorElement extends Element {  // Extend Element
     public BigDecimal getReal4(int index) {
 		byte[] tmp = new byte[32];
 		int byteIndex = index * 4;
-		System.arraycopy(m_value, byteIndex, tmp, 0, 32);
+		System.arraycopy(m_value, byteIndex, tmp, 0, Math.min(tmp.length, Math.max(0, m_value.length - byteIndex)));
 		
-		double tmpdb = ByteBuffer.wrap(tmp).order(ByteOrder.LITTLE_ENDIAN).getDouble();
+		double tmpdb = ByteBuffer.wrap(tmp).order(ByteOrder.LITTLE_ENDIAN).getFloat();
 		return new BigDecimal(tmpdb).setScale(tmpdb == 0d ? 0 : 20, RoundingMode.HALF_UP);
     }
     
@@ -214,7 +214,7 @@ public class VectorElement extends Element {  // Extend Element
 		
 		try {
 			
-			int copyLength = (m_value.length - 1 - byteIndex) >= tmp.length ? tmp.length : (m_value.length - 1 - byteIndex);
+			int copyLength = (m_value.length - byteIndex) >= tmp.length ? tmp.length : (m_value.length - byteIndex);
 			System.arraycopy(m_value, byteIndex, tmp, 0, copyLength);
 		} catch (Exception e) {
 			throw new RuntimeException(e);

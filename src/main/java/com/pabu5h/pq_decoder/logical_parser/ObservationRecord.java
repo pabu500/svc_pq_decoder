@@ -2,6 +2,9 @@ package com.pabu5h.pq_decoder.logical_parser;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
@@ -83,19 +86,31 @@ public class ObservationRecord {
     /// <param name="settings">The monitor settings to be applied to this observation record.</param>
     private ObservationRecord(Record physicalRecord, DataSourceRecord dataSource, MonitorSettingsRecord settings)
     {
+//    	System.out.println("new ObservationRecord... ");
         m_physicalRecord = physicalRecord;
         m_dataSource = dataSource;
         m_settings = settings;
+//        System.out.println("getChannelInstances... ");
         this.getChannelInstances();
+//        System.out.println("getChannelTriggerIndex... ");
         this.getChannelTriggerIndex();
+//        System.out.println("getCreateTime... ");
         this.getCreateTime();
+//        System.out.println("getDataSource... ");
         this.getDataSource();
+//        System.out.println("getDisturbanceCategoryID... ");
         this.getDisturbanceCategoryID();
+//        System.out.println("getName... ");
         this.getName();
+//        System.out.println("getPhysicalRecord... ");
         this.getPhysicalRecord();
+//        System.out.println("getSettings... ");
         this.getSettings();
+//        System.out.println("getStartTime... ");
         this.getStartTime();
+//        System.out.println("getTimeTriggered... ");
         this.getTimeTriggered();
+//        System.out.println("getTriggerMethod... ");
         this.getTriggerMethod();
     }
 
@@ -473,6 +488,7 @@ public class ObservationRecord {
     /// Gets the channel instances in this observation record.
     /// </summary>
     List<ChannelInstance> channelInstances;
+    static ExecutorService ex = Executors.newFixedThreadPool(1);
     public List<ChannelInstance> getChannelInstances()
     {
 //        get
@@ -486,7 +502,20 @@ public class ObservationRecord {
     	                .map(collection -> new ChannelInstance((CollectionElement) collection, this))
 //    	                .Select(collection => new ChannelInstance(collection, this))
     	                .collect(Collectors.toList());
-    			channelInstances.forEach(ChannelInstance::init);
+//    			System.out.println("getChannelInstances.init... " + channelInstances.size());
+    			
+    			try {
+					ex.invokeAll(channelInstances.stream().map(is -> {
+						return (Callable<String>)(() -> {
+							is.init();
+							return "";
+						});
+					}).toList());
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+    			
+    			// channelInstances.forEach(ChannelInstance::init);
     		}
     		
             return channelInstances;
