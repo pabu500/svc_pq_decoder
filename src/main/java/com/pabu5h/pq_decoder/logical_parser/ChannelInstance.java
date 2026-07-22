@@ -88,6 +88,9 @@ public class ChannelInstance {
     {
 //        get
 //        {
+            if (definition != null) {
+                return definition;
+            }
             return definition = m_observationRecord.getDataSource().getChannelDefinitions().get(channelDefinitionIndex);
 //        }
     }

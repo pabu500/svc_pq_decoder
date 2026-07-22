@@ -216,12 +216,12 @@ public class PQDController {
         }
         
         //SATEC
-//        String filepath = "D:\\workspace\\ext\\EventsTrends_SATEC\\Trends\\BANYAN DR 22kV CD_26-07-09 15-40.pqd";
-        //String filepath = "D:\\workspace\\ext\\EventsTrends_SATEC\\Events\\CRAWFORD 22kV AB_26-06-16 14-03-19-381.pqd";
+        //String filepath = "E:\\workspace\\PA\\ext\\EventsTrends_SATEC\\Trends\\BANYAN DR 22kV CD_26-07-09 15-40.pqd";
+        //String filepath = "E:\\workspace\\PA\\ext\\EventsTrends_SATEC\\Events\\CRAWFORD 22kV AB_26-06-16 14-03-19-381.pqd";
         
         //DRANETZ
-//        String filepath = "D:\\workspace\\ext\\Sampledata\\event\\temp10.pqd";
-        String filepath = "D:\\workspace\\ext\\Sampledata\\trend\\temp8.pqd";
+        //String filepath = "E:\\workspace\\PA\\ext\\Sampledata\\event\\temp10.pqd";
+        String filepath = "E:\\workspace\\PA\\ext\\Sampledata\\trend\\temp8.pqd";
 
         Map<String,Object> result = pqdModule.extractLogicalData(filepath,samplingStep);
         if(result == null){

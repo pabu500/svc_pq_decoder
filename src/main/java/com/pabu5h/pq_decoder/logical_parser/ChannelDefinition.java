@@ -523,6 +523,10 @@ public class ChannelDefinition {
     List<SeriesDefinition> seriesDefinitions;
     public List<SeriesDefinition> getSeriesDefinitions()
     {
+        // Derived from the immutable physical structure; build once and cache.
+        if (seriesDefinitions != null) {
+            return seriesDefinitions;
+        }
         return seriesDefinitions = m_physicalStructure.getCollectionByTag(SeriesDefinitionsTag)
                 .getElementsByTag(OneSeriesDefinitionTag)
                 .stream()
@@ -554,6 +558,8 @@ public class ChannelDefinition {
 
         seriesDefinitionsElement.addElement(seriesDefinitionElement);
 
+        seriesDefinitions = null; // invalidate cache after structural change
+
         return seriesDefinition;
     }
 
@@ -584,6 +590,8 @@ public class ChannelDefinition {
             	seriesDefinitionsElement.removeElement(seriesDefinitionElement);
             }
         }
+
+        seriesDefinitions = null; // invalidate cache after structural change
     }
 
     /// <summary>

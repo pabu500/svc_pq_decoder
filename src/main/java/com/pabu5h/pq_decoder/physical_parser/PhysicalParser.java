@@ -104,7 +104,11 @@ public class PhysicalParser {
             // Read the record header
             header = readRecordHeader(); // Reads 64 bytes from the new position
 
-            logger.info("Read header: " + header.toString());
+            // Guarded: building the header string per physical record is wasteful
+            // for large files and is only useful for debugging.
+            if (logger.isLoggable(java.util.logging.Level.FINE)) {
+                logger.fine("Read header: " + header.toString());
+            }
 
         } catch (IOException e) {
             throw new IOException("Error reading from stream: " + e.getMessage(), e);

@@ -300,6 +300,12 @@ public class DataSourceRecord {
     public List<ChannelDefinition> channelDefinitions;
     public List<ChannelDefinition> getChannelDefinitions()
     {
+        // The channel definitions are derived purely from the immutable physical
+        // structure, so build them once and cache. Rebuilding on every call was the
+        // dominant performance cost (called once per channel instance, i.e. O(n^2)).
+        if (channelDefinitions != null) {
+            return channelDefinitions;
+        }
         return channelDefinitions = m_physicalRecord.getBody().getCollection()
                 .getCollectionByTag(ChannelDefinitionsTag)
                 .getElementsByTag(OneChannelDefinitionTag)
@@ -353,6 +359,8 @@ public class DataSourceRecord {
 
         channelDefinitionsElement.addElement(channelDefinitionElement);
 
+        channelDefinitions = null; // invalidate cache after structural change
+
         return channelDefinition;
     }
 
@@ -385,6 +393,8 @@ public class DataSourceRecord {
             if (channelDefinition.equals(definition))
                 channelDefinitionsElement.removeElement(channelDefinitionElement);
         }
+
+        channelDefinitions = null; // invalidate cache after structural change
     }
 
     /// <summary>
