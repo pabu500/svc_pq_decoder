@@ -1,9 +1,7 @@
 package com.pabu5h.pq_decoder;
 
-import com.pabu5h.pq_decoder.logical_parser.ChannelDefinition.QuantityMeasured;
 import com.pabu5h.pq_decoder.logical_parser.ChannelInstance;
 import com.pabu5h.pq_decoder.logical_parser.LogicalParser;
-import com.pabu5h.pq_decoder.logical_parser.MonitorSettingsRecord;
 import com.pabu5h.pq_decoder.logical_parser.ObservationRecord;
 import com.pabu5h.pq_decoder.logical_parser.QuantityType;
 import com.pabu5h.pq_decoder.logical_parser.SeriesInstance;
@@ -27,7 +25,7 @@ public class PqdModule {
 
         while (parserLogical.hasNextObservationRecord()) {
             ObservationRecord record = parserLogical.nextObservationRecord();
-            String dataSourceName = Optional.ofNullable(record.getDataSource().dataSourceName).orElse("");
+            String dataSourceName = Optional.ofNullable(record.getDataSource().dataSourceName).orElse("").replace("\u0000", "");
             String startTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(record.getCreateTime());
             int channelCount = record.getChannelInstances().size();
             double nominalFrequency = record.getSettings().getNominalFrequency();
@@ -51,12 +49,15 @@ public class PqdModule {
                 String phase = channelInstance.getDefinition().getPhase().toString();
                 String measurementUnit = channelInstance.getDefinition().getQuantityMeasured().toString();
                 if (channelName == null || channelName.trim().length() == 0) {
-                	channelName = String.format("[%0" + (max + "").length() + "d] ", idx + 1) 
+                	channelName = String.format("[%0" + (max + "").length() + "d] ", idx)
                 			+ QuantityType.getByGUID(channelInstance.getDefinition().getQuantityTypeID()) 
                 			+ " - " 
                 			+ phase 
                 			+ " " 
                 			+ channelInstance.getDefinition().getQuantityMeasured();
+                }
+                if (channelName != null) {
+                    channelName = channelName.replace("\u0000", "");
                 }
 
                 if (!channelInstance.getSeriesInstances().isEmpty()) {
