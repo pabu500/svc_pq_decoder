@@ -1,5 +1,7 @@
 package com.pabu5h.pq_decoder.logical_parser;
 
+import java.lang.reflect.Field;
+
 import com.pabu5h.pq_decoder.util.GUID;
 
 public class QuantityType {
@@ -120,4 +122,18 @@ public class QuantityType {
 //
 //    private static Tag s_quantityTypeTag;
 //    private static Dictionary<Guid, Identifier> s_quantityTypeLookup;
+    
+    public static String getByGUID(GUID guid) {
+    	try {
+    		for (Field f : QuantityType.class.getDeclaredFields()) {
+        		GUID x = (GUID) f.get(null);
+        		if (x.equals(guid)) {
+        			return f.getName().toUpperCase();
+        		}
+        	}
+		} catch (Exception e) {
+			//
+		}
+    	return "Unknown";
+    }
 }

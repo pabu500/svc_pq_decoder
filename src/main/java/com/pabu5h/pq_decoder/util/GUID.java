@@ -96,9 +96,6 @@ public final class GUID {
 
 	private static String inverse(String name) {
 		
-		if ("67f6af90-f753-0x11cf-9d89-0080c72e70a3".equals(name)) {
-			System.out.println();
-		}
 		if (name.length() != 36) {
 			assert name != null && name.length() == 36 : "name must be 36 char in length";
 		}

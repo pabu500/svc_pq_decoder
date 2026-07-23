@@ -1,8 +1,11 @@
 package com.pabu5h.pq_decoder;
 
+import com.pabu5h.pq_decoder.logical_parser.ChannelDefinition.QuantityMeasured;
 import com.pabu5h.pq_decoder.logical_parser.ChannelInstance;
 import com.pabu5h.pq_decoder.logical_parser.LogicalParser;
+import com.pabu5h.pq_decoder.logical_parser.MonitorSettingsRecord;
 import com.pabu5h.pq_decoder.logical_parser.ObservationRecord;
+import com.pabu5h.pq_decoder.logical_parser.QuantityType;
 import com.pabu5h.pq_decoder.logical_parser.SeriesInstance;
 import org.springframework.stereotype.Service;
 
@@ -41,10 +44,20 @@ public class PqdModule {
             List<Map<String, Object>> channelValues = new ArrayList<>();
             Boolean isInterruption = false;
 
-            for (ChannelInstance channelInstance : record.getChannelInstances()) {
+            int max = record.getChannelInstances().size() - 1;
+            for (int idx = 0; idx < record.getChannelInstances().size(); idx++) {
+            	ChannelInstance channelInstance = record.getChannelInstances().get(idx);
                 String channelName = channelInstance.getDefinition().getChannelName();
                 String phase = channelInstance.getDefinition().getPhase().toString();
                 String measurementUnit = channelInstance.getDefinition().getQuantityMeasured().toString();
+                if (channelName == null || channelName.trim().length() == 0) {
+                	channelName = String.format("[%0" + (max + "").length() + "d] ", idx + 1) 
+                			+ QuantityType.getByGUID(channelInstance.getDefinition().getQuantityTypeID()) 
+                			+ " - " 
+                			+ phase 
+                			+ " " 
+                			+ channelInstance.getDefinition().getQuantityMeasured();
+                }
 
                 if (!channelInstance.getSeriesInstances().isEmpty()) {
                     SeriesInstance firstSeriesInstance = channelInstance.getSeriesInstances().get(1);
@@ -134,6 +147,7 @@ public class PqdModule {
             allRecords.add(recordData);
         }
         channelInfoMap.put("data",Map.of("pqd_data",Map.of("logical_parser", allRecords)) );
+
         parserLogical.Close();
         logger.info("Logical parser processed successfully");
         return channelInfoMap;
