@@ -4,6 +4,7 @@ import com.pabu5h.pq_decoder.logical_parser.ChannelInstance;
 import com.pabu5h.pq_decoder.logical_parser.LogicalParser;
 import com.pabu5h.pq_decoder.logical_parser.ObservationRecord;
 import com.pabu5h.pq_decoder.logical_parser.QuantityType;
+import com.pabu5h.pq_decoder.logical_parser.SeriesDefinition.QuantityUnits;
 import com.pabu5h.pq_decoder.logical_parser.SeriesInstance;
 import org.springframework.stereotype.Service;
 
@@ -122,17 +123,23 @@ public class PqdModule {
                             }
                         }
 
+                        List<Double> xValues = new ArrayList<>();
+                        QuantityUnits xUnit = channelInstance.getDefinition().getSeriesDefinitions().get(0).getQuantityUnits();
+                        List<Number> xSeriesInstance = channelInstance.getSeriesInstances().get(0).getOriginalValues();
                         for (int i = 0; i < values.size(); i += Integer.parseInt(step)) {
                             extractedValues.add(values.get(i));
+                            xValues.add(xSeriesInstance.get(i).doubleValue());
                         }
 
                         firstChannel = false;
-
+                        
                         Map<String, Object> channelData = Map.of(
                                 "channel_name", channelName,
                                 "phase", phase,
                                 "measurement_unit", measurementUnit,
-                                "values", extractedValues
+                                "values", extractedValues,
+                                "xUnits", Map.of("unit", xUnit.toString(), "values", xValues)
+                                
                         );
                         channelValues.add(channelData);
                     }
